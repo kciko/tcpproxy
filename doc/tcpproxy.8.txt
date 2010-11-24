@@ -1,0 +1,117 @@
+tcpproxy(8)
+===========
+
+NAME
+----
+
+tcpproxy - IPv4/IPv6 tcp connection proxy
+
+
+SYNOPSIS
+--------
+
+....
+tcpproxy
+  [ -h|--help ]
+  [ -D|--nodaemonize ]
+  [ -u|--username <username> ]
+  [ -g|--groupname <groupname> ]
+  [ -C|--chroot <path> ]
+  [ -P|--write-pid <filename> ]
+  [ -L|--log <target>:<level>[,<param1>[,<param2>[..]]] ]
+  [ -U|--debug ]
+....
+
+
+DESCRIPTION
+-----------
+
+*tcpproxy* is a simple tcp connection proxy which combines the 
+features of rinetd and 6tunnel. *tcpproxy* supports IPv4 and 
+IPv6 and also supports connections from IPv6 to IPv4 endpoints 
+and vice versa.
+
+OPTIONS
+-------
+
+The following options can be passed to the *tcpproxy* daemon:
+
+*-D, --nodaemonize*::
+   This option instructs *tcpproxy* to run in foreground
+   instead of becoming a daemon which is the default.
+
+*-u, --username <username>*::
+   run as this user. If no group is specified (*-g*) the default group of 
+   the user is used. The default is to not drop privileges.
+
+*-g, --groupname <groupname>*::
+   run as this group. If no username is specified (*-u*) this gets ignored.
+   The default is to not drop privileges.
+
+*-C, --chroot <path>*::
+   Instruct *tcpproxy* to run in a chroot jail. The default is 
+   to not run in chroot.
+
+*-P, --write-pid <filename>*::
+   Instruct *tcpproxy* to write it's pid to this file. The default is 
+   to not create a pid file.
+
+*-L, --log <target>:<level>[,<param1>[,<param2>[..]]]*::
+   add log target to logging system. This can be invoked several times
+   in order to log to different targets at the same time. Every target 
+   hast its own log level which is a number between 0 and 5. Where 0 means
+   disabling log and 5 means debug messages are enabled. +
+   The file target can be used more the once with different levels.
+   If no target is provided at the command line a single target with the 
+   config *syslog:3,tcpproxy,daemon* is added. +
+   The following targets are supported:
+
+   *syslog*;; log to syslog daemon, parameters <level>[,<logname>[,<facility>]]
+   *file*;; log to file, parameters <level>[,<path>]
+   *stdout*;; log to standard output, parameters <level>
+   *stderr*;; log to standard error, parameters <level>
+
+*-U, --debug*::
+   This option instructs *tcpproxy* to run in debug mode. It implicits *-D* 
+   (don't daemonize) and adds a log target with the configuration
+   *stdout:5* (logging with maximum level). In future releases there might
+   be additional output when this option is supplied.
+
+
+
+EXAMPLES
+--------
+
+nothing yet..
+
+
+BUGS
+----
+Most likely there are some bugs in *tcpproxy*. If you find a bug, please let
+the developers know at tcpproxy@spreadspace.org. Of course, patches are preferred.
+
+
+SEE ALSO
+--------
+nothing yet..
+
+
+AUTHORS
+-------
+
+Christian Pointner <equinox@spreadspace.org>
+
+
+RESOURCES
+---------
+
+Main web site: http://www.spreadspace.org/tcpproxy/
+
+
+COPYING
+-------
+
+Copyright \(C) 2010 Christian Pointner. This  program is  free 
+software: you can redistribute it and/or modify it under the terms 
+of the GNU General Public License as published by the Free Software 
+Foundation, either version 3 of the License, or any later version.
