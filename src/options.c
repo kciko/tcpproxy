@@ -26,7 +26,7 @@
  */
 
 #include "datatypes.h"
-#include "version.h"
+#include "config.h"
 
 #include "options.h"
 
@@ -222,8 +222,7 @@ void options_default(options_t* opt)
   opt->local_port_ = NULL;
   opt->remote_addr_ = NULL;
   opt->remote_port_ = NULL;
-      // TODO set system config dir
-  opt->config_file_ = strdup("/etc/tcpproxy.conf");
+  opt->config_file_ = strdup(CONFFILE);
   string_list_init(&opt->log_targets_);
   opt->debug_ = 0;
 }
