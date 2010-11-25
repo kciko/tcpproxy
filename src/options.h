@@ -39,6 +39,11 @@ struct options_struct {
   char* chroot_dir_;
   char* pid_file_;
   string_list_t log_targets_;
+  char* local_addr_;
+  char* local_port_;
+  char* remote_addr_;
+  char* remote_port_;
+  char* config_file_;
   int debug_;
 };
 typedef struct options_struct options_t;

@@ -178,6 +178,11 @@ int options_parse(options_t* opt, int argc, char* argv[])
     PARSE_STRING_PARAM("-P","--write-pid", opt->pid_file_)
     PARSE_STRING_LIST("-L","--log", opt->log_targets_)
     PARSE_BOOL_PARAM("-U", "--debug", opt->debug_)
+    PARSE_STRING_PARAM("-l","--local-addr", opt->local_addr_)
+    PARSE_STRING_PARAM("-p","--local-port", opt->local_port_)
+    PARSE_STRING_PARAM("-r","--remote-addr", opt->remote_addr_)
+    PARSE_STRING_PARAM("-o","--remote-port", opt->remote_port_)
+    PARSE_STRING_PARAM("-c","--config", opt->config_file_)
     else 
       return i;
   }
@@ -213,6 +218,12 @@ void options_default(options_t* opt)
   opt->groupname_ = NULL;
   opt->chroot_dir_ = NULL;
   opt->pid_file_ = NULL;
+  opt->local_addr_ = NULL;
+  opt->local_port_ = NULL;
+  opt->remote_addr_ = NULL;
+  opt->remote_port_ = NULL;
+      // TODO set system config dir
+  opt->config_file_ = strdup("/etc/tcpproxy.conf");
   string_list_init(&opt->log_targets_);
   opt->debug_ = 0;
 }
@@ -233,6 +244,16 @@ void options_clear(options_t* opt)
   if(opt->pid_file_)
     free(opt->pid_file_);
   string_list_clear(&opt->log_targets_);
+  if(opt->local_addr_)
+    free(opt->local_addr_);
+  if(opt->local_port_)
+    free(opt->local_port_);
+  if(opt->remote_addr_)
+    free(opt->remote_addr_);
+  if(opt->remote_port_)
+    free(opt->remote_port_);
+  if(opt->config_file_)
+    free(opt->config_file_);
 }
 
 void options_print_usage()
@@ -248,6 +269,11 @@ void options_print_usage()
   printf("         [-L|--log] <target>:<level>[,<param1>[,<param2>..]]\n");
   printf("                                             add a log target, can be invoked several times\n");
   printf("         [-U|--debug]                        don't daemonize and log to stdout with maximum log level\n");
+  printf("         [-l|--local-addr] <host>            local address to listen on\n");
+  printf("         [-p|--local-port] <service>         local port to listen on\n");
+  printf("         [-r|--remote-addr] <host>           remote address to connect to\n");
+  printf("         [-o|--remote-port] <service>        remote port to connect to\n");
+  printf("         [-c|--config] <file>                configuration file\n");
 }
 
 void options_print_version()
@@ -269,5 +295,10 @@ void options_print(options_t* opt)
   printf("pid_file: '%s'\n", opt->pid_file_);
   printf("log_targets: \n");
   string_list_print(&opt->log_targets_, "  '", "'\n");
+  printf("local_addr: '%s'\n", opt->local_addr_);
+  printf("local_port: '%s'\n", opt->local_port_);
+  printf("remote_addr: '%s'\n", opt->remote_addr_);
+  printf("remote_port: '%s'\n", opt->remote_port_);
+  printf("config_file: '%s'\n", opt->config_file_);
   printf("debug: %s\n", !opt->debug_ ? "false" : "true");
 }
