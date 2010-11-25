@@ -20,6 +20,11 @@ tcpproxy
   [ -P|--write-pid <filename> ]
   [ -L|--log <target>:<level>[,<param1>[,<param2>[..]]] ]
   [ -U|--debug ]
+  [ -l|--local-addr <host> ]
+  [ -p|--local-port <service> ]
+  [ -r|--remote-addr <host> ]
+  [ -o|--remote-port <service> ]
+  [ -c|--config <file> ]
 ....
 
 
@@ -77,6 +82,20 @@ The following options can be passed to the *tcpproxy* daemon:
    *stdout:5* (logging with maximum level). In future releases there might
    be additional output when this option is supplied.
 
+*-l, --local-addr <host>*::
+   tba
+
+*-p, --local-port <service>*::
+   tba
+
+*-r, --remote-addr <host>*::
+   tba
+
+*-o, --remote-port <service>*::
+   tba
+
+*-c, --config <file>*::
+   tba
 
 
 EXAMPLES
