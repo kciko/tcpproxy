@@ -100,15 +100,15 @@ int main(int argc, char* argv[])
     log_close();
     exit(ret);
   }
-  string_list_element_t* tmp = opt.log_targets_.first_;
+  slist_element_t* tmp = opt.log_targets_.first_;
   while(tmp) {
-    ret = log_add_target(tmp->string_);
+    ret = log_add_target(tmp->data_);
     if(ret) {
       switch(ret) {
       case -2: fprintf(stderr, "memory error on log_add_target, exitting\n"); break;
-      case -3: fprintf(stderr, "unknown log target: '%s', exitting\n", tmp->string_); break;
-      case -4: fprintf(stderr, "this log target is only allowed once: '%s', exitting\n", tmp->string_); break;
-      default: fprintf(stderr, "syntax error near: '%s', exitting\n", tmp->string_); break;
+      case -3: fprintf(stderr, "unknown log target: '%s', exitting\n", (char*)(tmp->data_)); break;
+      case -4: fprintf(stderr, "this log target is only allowed once: '%s', exitting\n", (char*)(tmp->data_)); break;
+      default: fprintf(stderr, "syntax error near: '%s', exitting\n", (char*)(tmp->data_)); break;
       }
       
       options_clear(&opt);
@@ -120,6 +120,8 @@ int main(int argc, char* argv[])
 
   log_printf(NOTICE, "just started...");
   options_parse_post(&opt);
+
+  options_print(&opt);
 
   priv_info_t priv;
   if(opt.username_)

@@ -33,6 +33,7 @@ EXECUTABLE := tcpproxy
 
 C_OBJS := log.o \
           options.o \
+          slist.o \
           string_list.o \
           sig_handler.o \
           tcpproxy.o

@@ -25,42 +25,26 @@
  *  along with tcpproxy. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef TCPPROXY_slist_h_INCLUDED
+#define TCPPROXY_slist_h_INCLUDED
 
-#include "string_list.h"
-#include "slist.h"
+struct slist_element_struct {
+  void* data_;
+  struct slist_element_struct* next_;
+};
+typedef struct slist_element_struct slist_element_t;
 
-int string_list_init(string_list_t* list)
-{
-  return slist_init(list, &free);
-}
+slist_element_t* slist_get_last(slist_element_t* first);
 
-void string_list_clear(string_list_t* list)
-{
-  slist_clear(list);
-}
+struct slist_struct {
+  void (*delete_element)(void* element);
+  slist_element_t* first_;
+};
+typedef struct slist_struct slist_t;
 
-int string_list_add(string_list_t* list, const char* string)
-{
-  if(!list)
-    return -1;
-  
-  if(slist_add(list, strdup(string)) == NULL)
-    return -2;
+int slist_init(slist_t* lst, void (*delete_element)(void*));
+slist_element_t* slist_add(slist_t* lst, void* data);
+void slist_remove(slist_t* lst, void* data);
+void slist_clear(slist_t* lst);
 
-  return 0;
-}
-
-void string_list_print(string_list_t* list, const char* head, const char* tail)
-{
-  if(!list)
-    return;
-  
-  slist_element_t* tmp = list->first_;
-  while(tmp) {
-    printf("%s%s%s", head, (char*)(tmp->data_), tail);
-    tmp = tmp->next_;
-  }
-}
+#endif

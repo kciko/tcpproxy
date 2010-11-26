@@ -28,18 +28,11 @@
 #ifndef TCPPROXY_string_list_h_INCLUDED
 #define TCPPROXY_string_list_h_INCLUDED
 
-struct string_list_element_struct {
-  char* string_;
-  struct string_list_element_struct* next_;
-};
-typedef struct string_list_element_struct string_list_element_t;
+#include "slist.h"
 
-struct string_list_struct {
-  string_list_element_t* first_;
-};
-typedef struct string_list_struct string_list_t;
+typedef slist_t string_list_t;
 
-void string_list_init(string_list_t* list);
+int string_list_init(string_list_t* list);
 void string_list_clear(string_list_t* list);
 int string_list_add(string_list_t* list, const char* string);
 
