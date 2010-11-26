@@ -76,7 +76,7 @@ slist_element_t* slist_add(slist_t* lst, void* data)
 
 void slist_remove(slist_t* lst, void* data)
 {
-  if(!lst || !lst->first_)
+  if(!lst || !lst->first_ || !data)
     return;
 
   slist_element_t* tmp = lst->first_->next_;

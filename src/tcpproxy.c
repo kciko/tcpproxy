@@ -36,6 +36,8 @@
 #include "log.h"
 #include "daemon.h"
 
+#include "listener.h"
+
 int main_loop(options_t* opt)
 {
   log_printf(INFO, "entering main loop");
@@ -120,8 +122,6 @@ int main(int argc, char* argv[])
 
   log_printf(NOTICE, "just started...");
   options_parse_post(&opt);
-
-  options_print(&opt);
 
   priv_info_t priv;
   if(opt.username_)
