@@ -25,6 +25,8 @@
  *  along with tcpproxy. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "datatypes.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>

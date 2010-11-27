@@ -38,6 +38,7 @@ C_OBJS := log.o \
           sig_handler.o \
           tcp.o \
           listener.o \
+          clients.o \
           tcpproxy.o
 
 C_SRCS := $(C_OBJS:%.o=%.c)
