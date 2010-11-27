@@ -25,13 +25,20 @@
  *  along with tcpproxy. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <unistd.h>
+#include <errno.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <unistd.h>
 #include <string.h>
+#include <stdio.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include "listener.h"
 #include "tcp.h"
+#include "log.h"
 
 void listener_delete_element(void* e)
 {
@@ -54,27 +61,85 @@ void listener_clear(listeners_t* list)
   slist_clear(list);
 }
 
-int listener_add(listeners_t* list, char* laddr, char* lport, char* raddr, char* rport)
+int listener_add(listeners_t* list, const char* laddr, const char* lport, const char* raddr, const char* rport)
 {
   if(!list)
     return -1;
- 
-  listener_t* element = malloc(sizeof(listener_t));
-  if(!element)
-    return -2;
+
+// TODO: what if more than one address is returned here? 
+  struct addrinfo* re = tcp_resolve_endpoint(raddr, rport, ANY);
+  if(!re)
+    return -1;
+
+  struct addrinfo* le = tcp_resolve_endpoint(laddr, lport, ANY);
+  if(!le) {
+    freeaddrinfo(re);
+    return -1;
+  }
+
+  struct addrinfo* l = le;
+  int ret = 0;
+  while(l) {
+    listener_t* element = malloc(sizeof(listener_t));
+    if(!element) {
+      ret = -2;
+      break;
+    }
+    memset(&(element->remote_end_), 0, sizeof(element->remote_end_));
+    memcpy(&(element->remote_end_), re->ai_addr, re->ai_addrlen);
+
+    memset(&(element->local_end_), 0, sizeof(element->local_end_));
+    memcpy(&(element->local_end_), l->ai_addr, l->ai_addrlen);
+
+    element->fd_ = socket(l->ai_family, SOCK_STREAM, 0);
+    if(element->fd_ < 0) {
+      log_printf(ERROR, "Error on opening tcp socket: %s", strerror(errno));
+      free(element);
+      ret = -1;
+      break;
+    }
+
+    if(l->ai_family == AF_INET6) {
+      int on = 1;
+      if(setsockopt(element->fd_, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)))
+        log_printf(WARNING, "failed to set IPV6_V6ONLY socket option: %s", strerror(errno));
+    }
+
+    ret = bind(element->fd_, l->ai_addr, l->ai_addrlen);
+    if(ret) {
+      log_printf(ERROR, "Error on bind(): %s", strerror(errno));
+      close(element->fd_);
+      free(element);
+      break;
+    }
+
+    ret = listen(element->fd_, 0);
+    if(ret) {
+      log_printf(ERROR, "Error on listen(): %s", strerror(errno));
+      close(element->fd_);
+      free(element);
+      break;
+    }
   
-// TODO: open listen socket and resolv local and remote address
+    char* ls = tcp_endpoint_to_string(element->local_end_);
+    char* rs = tcp_endpoint_to_string(element->remote_end_);
+    log_printf(NOTICE, "listening on: %s (remote: %s)", ls ? ls:"(null)", rs ? rs:"(null)");
+    if(ls) free(ls);
+    if(rs) free(rs);
 
-  static int fds = 6;
+    if(slist_add(list, element) == NULL) {
+      close(element->fd_);
+      free(element);
+      ret = -2;
+      break;
+    }
 
-  element->fd_ = fds++;
-  memset(&(element->local_end_), 0, sizeof(element->local_end_));
-  memset(&(element->remote_end_), 0, sizeof(element->remote_end_));
+    l = l->ai_next;
+  }
+  freeaddrinfo(re);
+  freeaddrinfo(le);
 
-  if(slist_add(list, element) == NULL)
-    return -2;
-
-  return 0;
+  return ret;
 }
 
 void listener_remove(listeners_t* list, int fd)

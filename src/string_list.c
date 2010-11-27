@@ -47,8 +47,11 @@ int string_list_add(string_list_t* list, const char* string)
   if(!list)
     return -1;
   
-  if(slist_add(list, strdup(string)) == NULL)
+  char* tmp = strdup(string);
+  if(slist_add(list, tmp) == NULL) {
+    free(tmp);
     return -2;
+  }
 
   return 0;
 }

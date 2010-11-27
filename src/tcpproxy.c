@@ -123,9 +123,25 @@ int main(int argc, char* argv[])
   log_printf(NOTICE, "just started...");
   options_parse_post(&opt);
 
+  listeners_t listeners;
+  ret = listener_init(&listeners);
+  if(ret) {
+    options_clear(&opt);
+    log_close();
+    exit(-1);
+  }
+  ret = listener_add(&listeners, opt.local_addr_, opt.local_port_, opt.remote_addr_, opt.remote_port_);
+  if(ret) {
+    listener_clear(&listeners);
+    options_clear(&opt);
+    log_close();
+    exit(-1);
+  }
+
   priv_info_t priv;
   if(opt.username_)
     if(priv_init(&priv, opt.username_, opt.groupname_)) {
+      listener_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
@@ -141,12 +157,14 @@ int main(int argc, char* argv[])
 
   if(opt.chroot_dir_)
     if(do_chroot(opt.chroot_dir_)) {
+      listener_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
     }
   if(opt.username_)
     if(priv_drop(&priv)) {
+      listener_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
@@ -166,6 +184,7 @@ int main(int argc, char* argv[])
 
   ret = main_loop(&opt);
 
+  listener_clear(&listeners);
   options_clear(&opt);
 
   if(!ret)

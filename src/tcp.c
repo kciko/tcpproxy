@@ -29,10 +29,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include "datatypes.h"
 
 #include "tcp.h"
+#include "log.h"
 
 char* tcp_endpoint_to_string(tcp_endpoint_t e)
 {
@@ -67,4 +71,32 @@ char* tcp_endpoint_to_string(tcp_endpoint_t e)
   asprintf(&ret, "%s%c%d", addrstr, addrport_sep ,port);
   free(addrstr);
   return ret;
+}
+
+struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv_type_t rt)
+{
+  struct addrinfo hints, *res;
+
+  res = NULL;
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+
+  switch(rt) {
+  case IPV4_ONLY: hints.ai_family = AF_INET; break;
+  case IPV6_ONLY: hints.ai_family = AF_INET6; break;
+  default: hints.ai_family = AF_UNSPEC; break;
+  }
+
+  int errcode = getaddrinfo(addr, port, &hints, &res);
+  if (errcode != 0) {
+    log_printf(ERROR, "Error resolving local address (%s:%s): %s", (addr) ? addr : "*", port, gai_strerror(errcode));
+    return NULL;
+  }
+  if(!res) {
+    log_printf(ERROR, "getaddrinfo returned no address for %s:%s", addr, port);
+    return NULL;
+  }
+
+  return res;
 }
