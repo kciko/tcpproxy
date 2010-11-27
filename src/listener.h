@@ -32,6 +32,7 @@
 
 #include "slist.h"
 #include "tcp.h"
+#include "clients.h"
 
 typedef struct {
   int fd_;
@@ -51,6 +52,6 @@ listener_t* listener_find(listeners_t* list, int fd);
 void listener_print(listeners_t* list);
 
 void listener_read_fds(listeners_t* list, fd_set* set, int* max_fd);
-int listener_handle_accept(listeners_t* list, fd_set* set);
+int listener_handle_accept(listeners_t* list, clients_t* clients, fd_set* set);
 
 #endif

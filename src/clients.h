@@ -34,7 +34,7 @@
 #include "tcp.h"
 
 typedef struct {
-  int fd_;
+  int fd_[2];
       // TODO: add info for each client and write buffers
 } client_t;
 
@@ -44,12 +44,15 @@ typedef slist_t clients_t;
 
 int clients_init(clients_t* list);
 void clients_clear(clients_t* list);
-int clients_add(clients_t* list, int fd, tcp_endpoint_t remote_end);
+int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end);
 void clients_remove(clients_t* list, int fd);
 client_t* clients_find(clients_t* list, int fd);
 void clients_print(clients_t* list);
 
 void clients_read_fds(clients_t* list, fd_set* set, int* max_fd);
 void clients_write_fds(clients_t* list, fd_set* set, int* max_fd);
+
+int clients_read(clients_t* list, fd_set* set);
+int clients_write(clients_t* list, fd_set* set);
 
 #endif

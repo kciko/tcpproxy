@@ -43,6 +43,8 @@
 #include "tcp.h"
 #include "log.h"
 
+#include "clients.h"
+
 void listener_delete_element(void* e)
 {
   if(!e)
@@ -208,7 +210,7 @@ void listener_read_fds(listeners_t* list, fd_set* set, int* max_fd)
   }
 }
 
-int listener_handle_accept(listeners_t* list, fd_set* set)
+int listener_handle_accept(listeners_t* list, clients_t* clients, fd_set* set)
 {
   if(!list)
     return -1;
@@ -229,8 +231,7 @@ int listener_handle_accept(listeners_t* list, fd_set* set)
       if(rs) free(rs);
       FD_CLR(l->fd_, set);
 
-          // TODO add client to client list
-      close(new_client);
+      clients_add(clients, new_client, &(l->remote_end_));
     }
     tmp = tmp->next_;
   }

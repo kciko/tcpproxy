@@ -38,15 +38,18 @@
 #include "daemon.h"
 
 #include "listener.h"
+#include "clients.h"
 
 int main_loop(options_t* opt, listeners_t* listeners)
 {
   log_printf(INFO, "entering main loop");
 
-  int return_value = 0;
   int sig_fd = signal_init();
   if(sig_fd < 0)
-    return_value -1;
+    return -1;
+
+  clients_t clients;
+  int return_value = clients_init(&clients);
 
   while(!return_value) {
     fd_set readfds;
@@ -54,6 +57,7 @@ int main_loop(options_t* opt, listeners_t* listeners)
     FD_SET(sig_fd, &readfds);
     int nfds = sig_fd;
     listener_read_fds(listeners, &readfds, &nfds);
+    clients_read_fds(&clients, &readfds, &nfds);
     int ret = select(nfds + 1, &readfds, NULL, NULL, NULL);
     if(ret == -1 && errno != EINTR) {
       log_printf(ERROR, "select returned with error: %s", strerror(errno));
@@ -70,10 +74,13 @@ int main_loop(options_t* opt, listeners_t* listeners)
       }
     }
 
-    return_value = listener_handle_accept(listeners, &readfds);
+    return_value = listener_handle_accept(listeners, &clients, &readfds);
     if(return_value) break;
+
+    return_value = clients_read(&clients, &readfds);
   }
 
+  clients_clear(&clients);
   signal_stop();
   return return_value;
 }
