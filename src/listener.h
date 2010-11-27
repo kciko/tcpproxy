@@ -28,6 +28,8 @@
 #ifndef TCPPROXY_listener_h_INCLUDED
 #define TCPPROXY_listener_h_INCLUDED
 
+#include <sys/select.h>
+
 #include "slist.h"
 #include "tcp.h"
 
@@ -47,5 +49,8 @@ int listener_add(listeners_t* list, const char* laddr, const char* lport, const 
 void listener_remove(listeners_t* list, int fd);
 listener_t* listener_find(listeners_t* list, int fd);
 void listener_print(listeners_t* list);
+
+void listener_read_fds(listeners_t* list, fd_set* set, int* max_fd);
+int listener_handle_accept(listeners_t* list, fd_set* set);
 
 #endif

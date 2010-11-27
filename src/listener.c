@@ -35,6 +35,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/select.h>
 
 #include "listener.h"
 #include "tcp.h"
@@ -99,8 +100,15 @@ int listener_add(listeners_t* list, const char* laddr, const char* lport, const 
       break;
     }
 
+    int on = 1;
+    ret = setsockopt(element->fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    if(ret) {
+      log_printf(ERROR, "Error on setsockopt(): %s", strerror(errno));
+      close(element->fd_);
+      free(element);
+      break;
+    }
     if(l->ai_family == AF_INET6) {
-      int on = 1;
       if(setsockopt(element->fd_, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)))
         log_printf(WARNING, "failed to set IPV6_V6ONLY socket option: %s", strerror(errno));
     }
@@ -180,4 +188,50 @@ void listener_print(listeners_t* list)
     }
     tmp = tmp->next_;
   }
+}
+
+void listener_read_fds(listeners_t* list, fd_set* set, int* max_fd)
+{
+  if(!list)
+    return;
+
+  slist_element_t* tmp = list->first_;
+  while(tmp) {
+    listener_t* l = (listener_t*)tmp->data_;
+    if(l) {
+      FD_SET(l->fd_, set);
+      *max_fd = *max_fd > l->fd_ ? *max_fd : l->fd_;
+    }
+    tmp = tmp->next_;
+  }
+}
+
+int listener_handle_accept(listeners_t* list, fd_set* set)
+{
+  if(!list)
+    return -1;
+
+  slist_element_t* tmp = list->first_;
+  while(tmp) {
+    listener_t* l = (listener_t*)tmp->data_;
+    if(l && FD_ISSET(l->fd_, set)) {
+      tcp_endpoint_t remote_addr;
+      int alen = sizeof(remote_addr);
+      int new_client = accept(l->fd_, (struct sockaddr *)&remote_addr, &alen);
+      if(new_client == -1) {
+        log_printf(ERROR, "Error on accept(): %s", strerror(errno));
+        return -1;
+      }
+      char* rs = tcp_endpoint_to_string(remote_addr);
+      log_printf(INFO, "new client from %s (fd=%d)", rs ? rs:"(null)", new_client);
+      if(rs) free(rs);
+      FD_CLR(l->fd_, set);
+
+          // TODO add client to client list
+      close(new_client);
+    }
+    tmp = tmp->next_;
+  }
+  
+  return 0;
 }

@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/select.h>
 
 #include "datatypes.h"
 #include "options.h"
@@ -38,7 +39,7 @@
 
 #include "listener.h"
 
-int main_loop(options_t* opt)
+int main_loop(options_t* opt, listeners_t* listeners)
 {
   log_printf(INFO, "entering main loop");
 
@@ -47,14 +48,13 @@ int main_loop(options_t* opt)
   if(sig_fd < 0)
     return_value -1;
 
-  fd_set readfds, readyfds;
-  FD_ZERO(&readfds);
-  FD_SET(sig_fd, &readfds);
-  int nfds = (nfds < sig_fd) ? sig_fd : nfds;
-
   while(!return_value) {
-    memcpy(&readyfds, &readfds, sizeof(readyfds));
-    int ret = select(nfds + 1, &readyfds, NULL, NULL, NULL);
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(sig_fd, &readfds);
+    int nfds = sig_fd;
+    listener_read_fds(listeners, &readfds, &nfds);
+    int ret = select(nfds + 1, &readfds, NULL, NULL, NULL);
     if(ret == -1 && errno != EINTR) {
       log_printf(ERROR, "select returned with error: %s", strerror(errno));
       return_value = -1;
@@ -63,12 +63,15 @@ int main_loop(options_t* opt)
     if(!ret || ret == -1)
       continue;
 
-    if(FD_ISSET(sig_fd, &readyfds)) {
+    if(FD_ISSET(sig_fd, &readfds)) {
       if(signal_handle()) {
         return_value = 1;
         break;
       }
     }
+
+    return_value = listener_handle_accept(listeners, &readfds);
+    if(return_value) break;
   }
 
   signal_stop();
@@ -182,7 +185,7 @@ int main(int argc, char* argv[])
     fclose(pid_file);
   }
 
-  ret = main_loop(&opt);
+  ret = main_loop(&opt, &listeners);
 
   listener_clear(&listeners);
   options_clear(&opt);
