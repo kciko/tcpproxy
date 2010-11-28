@@ -52,13 +52,15 @@ int main_loop(options_t* opt, listeners_t* listeners)
   int return_value = clients_init(&clients);
 
   while(!return_value) {
-    fd_set readfds;
+    fd_set readfds, writefds;
     FD_ZERO(&readfds);
+    FD_ZERO(&writefds);
     FD_SET(sig_fd, &readfds);
     int nfds = sig_fd;
     listener_read_fds(listeners, &readfds, &nfds);
     clients_read_fds(&clients, &readfds, &nfds);
-    int ret = select(nfds + 1, &readfds, NULL, NULL, NULL);
+    clients_write_fds(&clients, &writefds, &nfds);
+    int ret = select(nfds + 1, &readfds, &writefds, NULL, NULL);
     if(ret == -1 && errno != EINTR) {
       log_printf(ERROR, "select returned with error: %s", strerror(errno));
       return_value = -1;
@@ -75,6 +77,9 @@ int main_loop(options_t* opt, listeners_t* listeners)
     }
 
     return_value = listener_handle_accept(listeners, &clients, &readfds);
+    if(return_value) break;
+
+    return_value = clients_write(&clients, &writefds);
     if(return_value) break;
 
     return_value = clients_read(&clients, &readfds);

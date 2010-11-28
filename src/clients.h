@@ -33,9 +33,12 @@
 #include "slist.h"
 #include "tcp.h"
 
+#define BUFFER_LENGTH 1048576
+
 typedef struct {
   int fd_[2];
-      // TODO: add info for each client and write buffers
+  u_int8_t write_buf_[2][BUFFER_LENGTH];
+  u_int32_t write_buf_len_[2];
 } client_t;
 
 void clients_delete_element(void* e);
