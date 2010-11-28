@@ -66,7 +66,7 @@ void listener_clear(listeners_t* list)
   slist_clear(list);
 }
 
-int listener_add(listeners_t* list, const char* laddr, const char* lport, const char* raddr, const char* rport)
+int listener_add(listeners_t* list, const char* laddr, const char* lport, const char* raddr, const char* rport, const char* saddr)
 {
   if(!list)
     return -1;
@@ -76,9 +76,20 @@ int listener_add(listeners_t* list, const char* laddr, const char* lport, const 
   if(!re)
     return -1;
 
+  struct addrinfo* se = NULL;
+  if(saddr) {
+    se = tcp_resolve_endpoint(saddr, NULL, ANY);
+    if(!se) {
+      freeaddrinfo(re);
+      return -1;      
+    }
+  }
+
   struct addrinfo* le = tcp_resolve_endpoint(laddr, lport, ANY);
   if(!le) {
     freeaddrinfo(re);
+    if(se)
+      freeaddrinfo(se);
     return -1;
   }
 
@@ -92,6 +103,10 @@ int listener_add(listeners_t* list, const char* laddr, const char* lport, const 
     }
     memset(&(element->remote_end_), 0, sizeof(element->remote_end_));
     memcpy(&(element->remote_end_), re->ai_addr, re->ai_addrlen);
+
+    memset(&(element->source_end_), 0, sizeof(element->source_end_));
+    if(se) memcpy(&(element->source_end_), se->ai_addr, se->ai_addrlen);
+    else element->source_end_.ss_family = AF_UNSPEC;
 
     memset(&(element->local_end_), 0, sizeof(element->local_end_));
     memcpy(&(element->local_end_), l->ai_addr, l->ai_addrlen);
@@ -135,9 +150,11 @@ int listener_add(listeners_t* list, const char* laddr, const char* lport, const 
   
     char* ls = tcp_endpoint_to_string(element->local_end_);
     char* rs = tcp_endpoint_to_string(element->remote_end_);
-    log_printf(NOTICE, "listening on: %s (remote: %s)", ls ? ls:"(null)", rs ? rs:"(null)");
+    char* ss = tcp_endpoint_to_string(element->source_end_);
+    log_printf(NOTICE, "listening on: %s (remote: %s%s%s)", ls ? ls:"(null)", rs ? rs:"(null)", ss ? " with source " : "", ss ? ss : "");
     if(ls) free(ls);
     if(rs) free(rs);
+    if(ss) free(ss);
 
     if(slist_add(list, element) == NULL) {
       close(element->fd_);
@@ -149,6 +166,7 @@ int listener_add(listeners_t* list, const char* laddr, const char* lport, const 
     l = l->ai_next;
   }
   freeaddrinfo(re);
+  if(se) freeaddrinfo(se);
   freeaddrinfo(le);
 
   return ret;
@@ -231,7 +249,7 @@ int listener_handle_accept(listeners_t* list, clients_t* clients, fd_set* set)
       if(rs) free(rs);
       FD_CLR(l->fd_, set);
 
-      clients_add(clients, new_client, &(l->remote_end_));
+      clients_add(clients, new_client, &(l->remote_end_), &(l->source_end_));
     }
     tmp = tmp->next_;
   }

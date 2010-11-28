@@ -63,7 +63,7 @@ void clients_clear(clients_t* list)
   slist_clear(list);
 }
 
-int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end)
+int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end, const tcp_endpoint_t* source_end)
 {
 
   if(!list)
@@ -85,6 +85,22 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end)
     close(element->fd_[0]);
     free(element);
     return -1;
+  }
+
+  if(source_end->ss_family != AF_UNSPEC) {
+    socklen_t socklen = sizeof(*source_end);
+    if(source_end->ss_family == AF_INET)
+      socklen = sizeof(struct sockaddr_in);
+    else if (source_end->ss_family == AF_INET6)
+      socklen = sizeof(struct sockaddr_in6);
+
+    if(bind(element->fd_[1], (struct sockaddr *)source_end, socklen)==-1) { 
+      log_printf(INFO, "Error on bind(): %s, not adding client %d", strerror(errno), element->fd_[0]);
+      close(element->fd_[0]);
+      close(element->fd_[1]);
+      free(element);
+      return -1;
+    }
   }
 
   socklen_t socklen = sizeof(*remote_end);

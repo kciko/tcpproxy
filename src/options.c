@@ -182,6 +182,7 @@ int options_parse(options_t* opt, int argc, char* argv[])
     PARSE_STRING_PARAM("-p","--local-port", opt->local_port_)
     PARSE_STRING_PARAM("-r","--remote-addr", opt->remote_addr_)
     PARSE_STRING_PARAM("-o","--remote-port", opt->remote_port_)
+    PARSE_STRING_PARAM("-s","--source-addr", opt->source_addr_)
     PARSE_STRING_PARAM("-c","--config", opt->config_file_)
     else 
       return i;
@@ -222,6 +223,7 @@ void options_default(options_t* opt)
   opt->local_port_ = NULL;
   opt->remote_addr_ = NULL;
   opt->remote_port_ = NULL;
+  opt->source_addr_ = NULL;
   opt->config_file_ = strdup(CONFFILE);
   string_list_init(&opt->log_targets_);
   opt->debug_ = 0;
@@ -251,6 +253,8 @@ void options_clear(options_t* opt)
     free(opt->remote_addr_);
   if(opt->remote_port_)
     free(opt->remote_port_);
+  if(opt->source_addr_)
+    free(opt->source_addr_);
   if(opt->config_file_)
     free(opt->config_file_);
 }
@@ -272,6 +276,7 @@ void options_print_usage()
   printf("         [-p|--local-port] <service>         local port to listen on\n");
   printf("         [-r|--remote-addr] <host>           remote address to connect to\n");
   printf("         [-o|--remote-port] <service>        remote port to connect to\n");
+  printf("         [-r|--source-addr] <host>           source address to connect from\n");
   printf("         [-c|--config] <file>                configuration file\n");
 }
 
@@ -298,6 +303,7 @@ void options_print(options_t* opt)
   printf("local_port: '%s'\n", opt->local_port_);
   printf("remote_addr: '%s'\n", opt->remote_addr_);
   printf("remote_port: '%s'\n", opt->remote_port_);
+  printf("source_addr: '%s'\n", opt->source_addr_);
   printf("config_file: '%s'\n", opt->config_file_);
   printf("debug: %s\n", !opt->debug_ ? "false" : "true");
 }

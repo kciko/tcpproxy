@@ -60,6 +60,8 @@ char* tcp_endpoint_to_string(tcp_endpoint_t e)
     addrstr_len = INET6_ADDRSTRLEN + 1;
     addrport_sep = '.';
     break;
+  case AF_UNSPEC:
+    return NULL;
   default:
     asprintf(&ret, "unknown address type");
     return ret;
@@ -90,11 +92,11 @@ struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv
 
   int errcode = getaddrinfo(addr, port, &hints, &res);
   if (errcode != 0) {
-    log_printf(ERROR, "Error resolving local address (%s:%s): %s", (addr) ? addr : "*", port, gai_strerror(errcode));
+    log_printf(ERROR, "Error resolving local address (%s:%s): %s", (addr) ? addr : "*", (port) ? port : "0", gai_strerror(errcode));
     return NULL;
   }
   if(!res) {
-    log_printf(ERROR, "getaddrinfo returned no address for %s:%s", addr, port);
+    log_printf(ERROR, "getaddrinfo returned no address for %s:%s", (addr) ? addr : "*", (port) ? port : "0");
     return NULL;
   }
 

@@ -43,6 +43,7 @@ struct options_struct {
   char* local_port_;
   char* remote_addr_;
   char* remote_port_;
+  char* source_addr_;
   char* config_file_;
   int debug_;
 };

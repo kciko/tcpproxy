@@ -38,6 +38,7 @@ typedef struct {
   int fd_;
   tcp_endpoint_t local_end_;
   tcp_endpoint_t remote_end_;
+  tcp_endpoint_t source_end_;
 } listener_t;
 
 void listener_delete_element(void* e);
@@ -46,7 +47,7 @@ typedef slist_t listeners_t;
 
 int listener_init(listeners_t* list);
 void listener_clear(listeners_t* list);
-int listener_add(listeners_t* list, const char* laddr, const char* lport, const char* raddr, const char* rport);
+int listener_add(listeners_t* list, const char* laddr, const char* lport, const char* raddr, const char* rport, const char* saddr);
 void listener_remove(listeners_t* list, int fd);
 listener_t* listener_find(listeners_t* list, int fd);
 void listener_print(listeners_t* list);
