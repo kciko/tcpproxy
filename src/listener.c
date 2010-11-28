@@ -101,15 +101,20 @@ int listener_add(listeners_t* list, const char* laddr, const char* lport, const 
       ret = -2;
       break;
     }
-    memset(&(element->remote_end_), 0, sizeof(element->remote_end_));
-    memcpy(&(element->remote_end_), re->ai_addr, re->ai_addrlen);
+    memset(&(element->remote_end_.addr_), 0, sizeof(element->remote_end_.addr_));
+    memcpy(&(element->remote_end_.addr_), re->ai_addr, re->ai_addrlen);
+    element->remote_end_.len_ = re->ai_addrlen;
 
-    memset(&(element->source_end_), 0, sizeof(element->source_end_));
-    if(se) memcpy(&(element->source_end_), se->ai_addr, se->ai_addrlen);
-    else element->source_end_.ss_family = AF_UNSPEC;
+    memset(&(element->source_end_.addr_), 0, sizeof(element->source_end_.addr_));
+    if(se) {
+      memcpy(&(element->source_end_.addr_), se->ai_addr, se->ai_addrlen);
+      element->source_end_.len_ = se->ai_addrlen;
+    }
+    else element->source_end_.addr_.ss_family = AF_UNSPEC;
 
-    memset(&(element->local_end_), 0, sizeof(element->local_end_));
-    memcpy(&(element->local_end_), l->ai_addr, l->ai_addrlen);
+    memset(&(element->local_end_.addr_), 0, sizeof(element->local_end_.addr_));
+    memcpy(&(element->local_end_.addr_), l->ai_addr, l->ai_addrlen);
+    element->local_end_.len_ = l->ai_addrlen;
 
     element->fd_ = socket(l->ai_family, SOCK_STREAM, 0);
     if(element->fd_ < 0) {
@@ -249,7 +254,7 @@ int listener_handle_accept(listeners_t* list, clients_t* clients, fd_set* set)
       if(rs) free(rs);
       FD_CLR(l->fd_, set);
 
-      clients_add(clients, new_client, &(l->remote_end_), &(l->source_end_));
+      clients_add(clients, new_client, l->remote_end_, l->source_end_);
     }
     tmp = tmp->next_;
   }

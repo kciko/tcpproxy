@@ -63,7 +63,7 @@ void clients_clear(clients_t* list)
   slist_clear(list);
 }
 
-int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end, const tcp_endpoint_t* source_end)
+int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const tcp_endpoint_t source_end)
 {
 
   if(!list)
@@ -79,7 +79,7 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end, const
   element->write_buf_len_[1] = 0;
   element->fd_[0] = fd;
 
-  element->fd_[1] = socket(remote_end->ss_family, SOCK_STREAM, 0);
+  element->fd_[1] = socket(remote_end.addr_.ss_family, SOCK_STREAM, 0);
   if(element->fd_[1] < 0) { 
     log_printf(INFO, "Error on socket(): %s, not adding client %d", strerror(errno), element->fd_[0]);
     close(element->fd_[0]);
@@ -87,14 +87,8 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end, const
     return -1;
   }
 
-  if(source_end->ss_family != AF_UNSPEC) {
-    socklen_t socklen = sizeof(*source_end);
-    if(source_end->ss_family == AF_INET)
-      socklen = sizeof(struct sockaddr_in);
-    else if (source_end->ss_family == AF_INET6)
-      socklen = sizeof(struct sockaddr_in6);
-
-    if(bind(element->fd_[1], (struct sockaddr *)source_end, socklen)==-1) { 
+  if(source_end.addr_.ss_family != AF_UNSPEC) {
+    if(bind(element->fd_[1], (struct sockaddr *)&(source_end.addr_), source_end.len_)==-1) { 
       log_printf(INFO, "Error on bind(): %s, not adding client %d", strerror(errno), element->fd_[0]);
       close(element->fd_[0]);
       close(element->fd_[1]);
@@ -103,13 +97,7 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end, const
     }
   }
 
-  socklen_t socklen = sizeof(*remote_end);
-  if(remote_end->ss_family == AF_INET)
-    socklen = sizeof(struct sockaddr_in);
-  else if (remote_end->ss_family == AF_INET6)
-    socklen = sizeof(struct sockaddr_in6);
-    
-  if(connect(element->fd_[1], (struct sockaddr *)remote_end, socklen)==-1) { 
+  if(connect(element->fd_[1], (struct sockaddr *)&(remote_end.addr_), remote_end.len_)==-1) { 
     log_printf(INFO, "Error on connect(): %s, not adding client %d", strerror(errno), element->fd_[0]);
     close(element->fd_[0]);
     close(element->fd_[1]);

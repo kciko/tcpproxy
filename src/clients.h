@@ -47,7 +47,7 @@ typedef slist_t clients_t;
 
 int clients_init(clients_t* list);
 void clients_clear(clients_t* list);
-int clients_add(clients_t* list, int fd, const tcp_endpoint_t* remote_end, const tcp_endpoint_t* source_end);
+int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const tcp_endpoint_t source_end);
 void clients_remove(clients_t* list, int fd);
 client_t* clients_find(clients_t* list, int fd);
 void clients_print(clients_t* list);

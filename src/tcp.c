@@ -44,7 +44,7 @@ char* tcp_endpoint_to_string(tcp_endpoint_t e)
   char addrstr[INET6_ADDRSTRLEN + 1], portstr[6], *ret;
   char addrport_sep = ':';
   
-  switch(e.ss_family)
+  switch(e.addr_.ss_family)
   {
   case AF_INET: addrport_sep = ':'; break;
   case AF_INET6: addrport_sep = '.'; break;
@@ -52,7 +52,7 @@ char* tcp_endpoint_to_string(tcp_endpoint_t e)
   default: asprintf(&ret, "unknown address type"); return ret;
   }
 
-  int errcode  = getnameinfo((struct sockaddr *)&e, sizeof(e), addrstr, sizeof(addrstr), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
+  int errcode  = getnameinfo((struct sockaddr *)&(e.addr_), e.len_, addrstr, sizeof(addrstr), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
   if (errcode != 0) return NULL;
   asprintf(&ret, "%s%c%s", addrstr, addrport_sep ,portstr);
   return ret;
