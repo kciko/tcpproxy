@@ -40,38 +40,21 @@
 
 char* tcp_endpoint_to_string(tcp_endpoint_t e)
 {
-  void* ptr;
-  u_int16_t port;
   size_t addrstr_len = 0;
-  char* addrstr, *ret;
+  char addrstr[INET6_ADDRSTRLEN + 1], portstr[6], *ret;
   char addrport_sep = ':';
   
-  switch(((struct sockaddr *)&e)->sa_family)
+  switch(e.ss_family)
   {
-  case AF_INET:
-    ptr = &((struct sockaddr_in *)&e)->sin_addr;
-    port = ntohs(((struct sockaddr_in *)&e)->sin_port);
-    addrstr_len = INET_ADDRSTRLEN + 1;
-    addrport_sep = ':';
-    break;
-  case AF_INET6:
-    ptr = &((struct sockaddr_in6 *)&e)->sin6_addr;
-    port = ntohs(((struct sockaddr_in6 *)&e)->sin6_port);
-    addrstr_len = INET6_ADDRSTRLEN + 1;
-    addrport_sep = '.';
-    break;
-  case AF_UNSPEC:
-    return NULL;
-  default:
-    asprintf(&ret, "unknown address type");
-    return ret;
+  case AF_INET: addrport_sep = ':'; break;
+  case AF_INET6: addrport_sep = '.'; break;
+  case AF_UNSPEC: return NULL;
+  default: asprintf(&ret, "unknown address type"); return ret;
   }
-  addrstr = malloc(addrstr_len);
-  if(!addrstr)
-    return NULL;
-  inet_ntop (((struct sockaddr *)&e)->sa_family, ptr, addrstr, addrstr_len);
-  asprintf(&ret, "%s%c%d", addrstr, addrport_sep ,port);
-  free(addrstr);
+
+  int errcode  = getnameinfo((struct sockaddr *)&e, sizeof(e), addrstr, sizeof(addrstr), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
+  if (errcode != 0) return NULL;
+  asprintf(&ret, "%s%c%s", addrstr, addrport_sep ,portstr);
   return ret;
 }
 
@@ -92,7 +75,7 @@ struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv
 
   int errcode = getaddrinfo(addr, port, &hints, &res);
   if (errcode != 0) {
-    log_printf(ERROR, "Error resolving local address (%s:%s): %s", (addr) ? addr : "*", (port) ? port : "0", gai_strerror(errcode));
+    log_printf(ERROR, "Error resolving address (%s:%s): %s", (addr) ? addr : "*", (port) ? port : "0", gai_strerror(errcode));
     return NULL;
   }
   if(!res) {
