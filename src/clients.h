@@ -33,7 +33,7 @@
 #include "slist.h"
 #include "tcp.h"
 
-#define BUFFER_LENGTH 1048576
+#define BUFFER_LENGTH 10240
 
 typedef struct {
   int fd_[2];

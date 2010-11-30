@@ -161,10 +161,14 @@ void clients_read_fds(clients_t* list, fd_set* set, int* max_fd)
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c) {
-      FD_SET(c->fd_[0], set);
-      FD_SET(c->fd_[1], set);
-      *max_fd = *max_fd > c->fd_[0] ? *max_fd : c->fd_[0];
-      *max_fd = *max_fd > c->fd_[1] ? *max_fd : c->fd_[1];
+      if(c->write_buf_len_[1] < BUFFER_LENGTH) {
+        FD_SET(c->fd_[0], set);
+        *max_fd = *max_fd > c->fd_[0] ? *max_fd : c->fd_[0];
+      }
+      if(c->write_buf_len_[0] < BUFFER_LENGTH) {
+        FD_SET(c->fd_[1], set);
+        *max_fd = *max_fd > c->fd_[1] ? *max_fd : c->fd_[1];
+      }
     }
     tmp = tmp->next_;
   }
@@ -213,7 +217,6 @@ int clients_read(clients_t* list, fd_set* set)
       }
       else continue;
 
-          // TODO: what when buffer is full? 
       int len = recv(c->fd_[in], &(c->write_buf_[out][c->write_buf_len_[out]]), BUFFER_LENGTH - c->write_buf_len_[out], 0);
       if(len < 0) {
         log_printf(INFO, "Error on recv(): %s, removing client %d", strerror(errno), c->fd_[0]);
