@@ -25,6 +25,7 @@ tcpproxy
   [ -r|--remote-addr <host> ]
   [ -o|--remote-port <service> ]
   [ -s|--source-addr <host> ]
+  [ -b|--buffer-size <size> ]
   [ -c|--config <file> ]
 ....
 
@@ -96,6 +97,9 @@ The following options can be passed to the *tcpproxy* daemon:
    tba
 
 *-s, --source-addr <host>*::
+   tba
+
+*-b, --buffer-size <size>*::
    tba
 
 *-c, --config <file>*::

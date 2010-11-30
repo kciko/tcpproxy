@@ -49,18 +49,23 @@ void clients_delete_element(void* e)
   client_t* element = (client_t*)e;
   close(element->fd_[0]);
   close(element->fd_[1]);
+  if(element->write_buf_[0].buf_)
+    free(element->write_buf_[0].buf_);
+  if(element->write_buf_[1].buf_)
+    free(element->write_buf_[1].buf_);
 
   free(e);
 }
 
-int clients_init(clients_t* list)
+int clients_init(clients_t* list, int32_t buffer_size)
 {
-  return slist_init(list, &clients_delete_element);
+  list->buffer_size_ = buffer_size;
+  return slist_init(&(list->list_), &clients_delete_element);
 }
 
 void clients_clear(clients_t* list)
 {
-  slist_clear(list);
+  slist_clear(&(list->list_));
 }
 
 int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const tcp_endpoint_t source_end)
@@ -75,13 +80,32 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
     return -2;
   }
 
-  element->write_buf_len_[0] = 0;
-  element->write_buf_len_[1] = 0;
   element->fd_[0] = fd;
+
+  element->write_buf_[0].buf_ = malloc(list->buffer_size_);
+  if(!element->write_buf_[0].buf_) {
+    free(element);
+    close(fd);
+    return -2;
+  }
+  element->write_buf_[0].length_ = list->buffer_size_;
+  element->write_buf_offset_[0] = 0;
+
+  element->write_buf_[1].buf_ = malloc(list->buffer_size_);
+  if(!element->write_buf_[1].buf_) {
+    free(element->write_buf_[0].buf_);
+    free(element);
+    close(fd);
+    return -2;
+  }
+  element->write_buf_[1].length_ = list->buffer_size_;
+  element->write_buf_offset_[1] = 0;
 
   element->fd_[1] = socket(remote_end.addr_.ss_family, SOCK_STREAM, 0);
   if(element->fd_[1] < 0) { 
     log_printf(INFO, "Error on socket(): %s, not adding client %d", strerror(errno), element->fd_[0]);
+    free(element->write_buf_[0].buf_);
+    free(element->write_buf_[1].buf_);
     close(element->fd_[0]);
     free(element);
     return -1;
@@ -90,6 +114,8 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
   if(source_end.addr_.ss_family != AF_UNSPEC) {
     if(bind(element->fd_[1], (struct sockaddr *)&(source_end.addr_), source_end.len_)==-1) { 
       log_printf(INFO, "Error on bind(): %s, not adding client %d", strerror(errno), element->fd_[0]);
+      free(element->write_buf_[0].buf_);
+      free(element->write_buf_[1].buf_);
       close(element->fd_[0]);
       close(element->fd_[1]);
       free(element);
@@ -99,13 +125,17 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
 
   if(connect(element->fd_[1], (struct sockaddr *)&(remote_end.addr_), remote_end.len_)==-1) { 
     log_printf(INFO, "Error on connect(): %s, not adding client %d", strerror(errno), element->fd_[0]);
+    free(element->write_buf_[0].buf_);
+    free(element->write_buf_[1].buf_);
     close(element->fd_[0]);
     close(element->fd_[1]);
     free(element);
     return -1;
   }
 
-  if(slist_add(list, element) == NULL) {
+  if(slist_add(&(list->list_), element) == NULL) {
+    free(element->write_buf_[0].buf_);
+    free(element->write_buf_[1].buf_);
     close(element->fd_[0]);
     close(element->fd_[1]);
     free(element);
@@ -117,7 +147,7 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
 
 void clients_remove(clients_t* list, int fd)
 {
-  slist_remove(list, clients_find(list, fd));
+  slist_remove(&(list->list_), clients_find(list, fd));
 }
 
 client_t* clients_find(clients_t* list, int fd)
@@ -125,7 +155,7 @@ client_t* clients_find(clients_t* list, int fd)
   if(!list)
     return NULL;
 
-  slist_element_t* tmp = list->first_;
+  slist_element_t* tmp = list->list_.first_;
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c && (c->fd_[0] == fd || c->fd_[1] == fd))
@@ -141,7 +171,7 @@ void clients_print(clients_t* list)
   if(!list)
     return;
   
-  slist_element_t* tmp = list->first_;
+  slist_element_t* tmp = list->list_.first_;
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c) {
@@ -157,15 +187,15 @@ void clients_read_fds(clients_t* list, fd_set* set, int* max_fd)
   if(!list)
     return;
 
-  slist_element_t* tmp = list->first_;
+  slist_element_t* tmp = list->list_.first_;
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c) {
-      if(c->write_buf_len_[1] < BUFFER_LENGTH) {
+      if(c->write_buf_offset_[1] < c->write_buf_[1].length_) {
         FD_SET(c->fd_[0], set);
         *max_fd = *max_fd > c->fd_[0] ? *max_fd : c->fd_[0];
       }
-      if(c->write_buf_len_[0] < BUFFER_LENGTH) {
+      if(c->write_buf_offset_[0] < c->write_buf_[0].length_) {
         FD_SET(c->fd_[1], set);
         *max_fd = *max_fd > c->fd_[1] ? *max_fd : c->fd_[1];
       }
@@ -179,15 +209,15 @@ void clients_write_fds(clients_t* list, fd_set* set, int* max_fd)
   if(!list)
     return;
 
-  slist_element_t* tmp = list->first_;
+  slist_element_t* tmp = list->list_.first_;
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c) {
-      if(c->write_buf_len_[0]) {
+      if(c->write_buf_offset_[0]) {
         FD_SET(c->fd_[0], set);
         *max_fd = *max_fd > c->fd_[0] ? *max_fd : c->fd_[0];
       }
-      if(c->write_buf_len_[1]) {
+      if(c->write_buf_offset_[1]) {
         FD_SET(c->fd_[1], set);
         *max_fd = *max_fd > c->fd_[1] ? *max_fd : c->fd_[1];
       }
@@ -201,7 +231,7 @@ int clients_read(clients_t* list, fd_set* set)
   if(!list)
     return -1;
   
-  slist_element_t* tmp = list->first_;
+  slist_element_t* tmp = list->list_.first_;
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     tmp = tmp->next_;
@@ -217,17 +247,17 @@ int clients_read(clients_t* list, fd_set* set)
       }
       else continue;
 
-      int len = recv(c->fd_[in], &(c->write_buf_[out][c->write_buf_len_[out]]), BUFFER_LENGTH - c->write_buf_len_[out], 0);
+      int len = recv(c->fd_[in], &(c->write_buf_[out].buf_[c->write_buf_offset_[out]]),  c->write_buf_[out].length_ - c->write_buf_offset_[out], 0);
       if(len < 0) {
         log_printf(INFO, "Error on recv(): %s, removing client %d", strerror(errno), c->fd_[0]);
-        slist_remove(list, c);
+        slist_remove(&(list->list_), c);
       }
       else if(!len) {
         log_printf(INFO, "client %d closed connection, removing it", c->fd_[0]);
-        slist_remove(list, c);
+        slist_remove(&(list->list_), c);
       }       
       else
-        c->write_buf_len_[out] += len;
+        c->write_buf_offset_[out] += len;
     }
   }
   
@@ -239,7 +269,7 @@ int clients_write(clients_t* list, fd_set* set)
   if(!list)
     return -1;
   
-  slist_element_t* tmp = list->first_;
+  slist_element_t* tmp = list->list_.first_;
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     tmp = tmp->next_;
@@ -247,18 +277,18 @@ int clients_write(clients_t* list, fd_set* set)
       int i;
       for(i=0; i<2; ++i) {
         if(FD_ISSET(c->fd_[i], set)) {
-          int len = send(c->fd_[i], c->write_buf_[i], c->write_buf_len_[i], 0);
+          int len = send(c->fd_[i], c->write_buf_[i].buf_, c->write_buf_offset_[i], 0);
           if(len < 0) {
             log_printf(INFO, "Error on send(): %s, removing client %d", strerror(errno), c->fd_[0]);
-            slist_remove(list, c);
+            slist_remove(&(list->list_), c);
           }
           else {
-            if(c->write_buf_len_[i] > len) {
-              memmove(c->write_buf_[i], &c->write_buf_[i][len], c->write_buf_len_[i] - len);
-              c->write_buf_len_[i] -= len;
+            if(c->write_buf_offset_[i] > len) {
+              memmove(c->write_buf_[i].buf_, &c->write_buf_[i].buf_[len], c->write_buf_offset_[i] - len);
+              c->write_buf_offset_[i] -= len;
             }
             else
-              c->write_buf_len_[i] = 0;
+              c->write_buf_offset_[i] = 0;
           }
         }
       }

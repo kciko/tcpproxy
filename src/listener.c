@@ -243,8 +243,8 @@ int listener_handle_accept(listeners_t* list, clients_t* clients, fd_set* set)
     listener_t* l = (listener_t*)tmp->data_;
     if(l && FD_ISSET(l->fd_, set)) {
       tcp_endpoint_t remote_addr;
-      int alen = sizeof(remote_addr);
-      int new_client = accept(l->fd_, (struct sockaddr *)&remote_addr, &alen);
+      remote_addr.len_ = sizeof(remote_addr.addr_);
+      int new_client = accept(l->fd_, (struct sockaddr *)&(remote_addr.addr_), &remote_addr.len_);
       if(new_client == -1) {
         log_printf(ERROR, "Error on accept(): %s", strerror(errno));
         return -1;

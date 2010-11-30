@@ -29,6 +29,7 @@
 #include "config.h"
 
 #include "options.h"
+#include "log.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -184,6 +185,7 @@ int options_parse(options_t* opt, int argc, char* argv[])
     PARSE_STRING_PARAM("-o","--remote-port", opt->remote_port_)
     PARSE_STRING_PARAM("-s","--source-addr", opt->source_addr_)
     PARSE_STRING_PARAM("-c","--config", opt->config_file_)
+    PARSE_INT_PARAM("-b","--buffer-size", opt->buffer_size_)
     else 
       return i;
   }
@@ -205,7 +207,10 @@ void options_parse_post(options_t* opt)
   if(!opt)
     return;
 
-      // nothing yet
+  if(opt->buffer_size_ <= 0) {
+    log_printf(WARNING, "illegal buffer size %d using default buffer size", opt->buffer_size_);
+    opt->buffer_size_ = 10 * 1024;
+  }
 }
 
 void options_default(options_t* opt)
@@ -226,6 +231,7 @@ void options_default(options_t* opt)
   opt->source_addr_ = NULL;
   opt->config_file_ = strdup(CONFFILE);
   string_list_init(&opt->log_targets_);
+  opt->buffer_size_ = 10 * 1024;
   opt->debug_ = 0;
 }
 
@@ -276,7 +282,8 @@ void options_print_usage()
   printf("         [-p|--local-port] <service>         local port to listen on\n");
   printf("         [-r|--remote-addr] <host>           remote address to connect to\n");
   printf("         [-o|--remote-port] <service>        remote port to connect to\n");
-  printf("         [-r|--source-addr] <host>           source address to connect from\n");
+  printf("         [-s|--source-addr] <host>           source address to connect from\n");
+  printf("         [-b|--buffer-size] <size>           size of transmit buffers\n");
   printf("         [-c|--config] <file>                configuration file\n");
 }
 
@@ -304,6 +311,7 @@ void options_print(options_t* opt)
   printf("remote_addr: '%s'\n", opt->remote_addr_);
   printf("remote_port: '%s'\n", opt->remote_port_);
   printf("source_addr: '%s'\n", opt->source_addr_);
+  printf("buffer-size: %d\n", opt->buffer_size_);
   printf("config_file: '%s'\n", opt->config_file_);
   printf("debug: %s\n", !opt->debug_ ? "false" : "true");
 }

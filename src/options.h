@@ -45,6 +45,7 @@ struct options_struct {
   char* remote_port_;
   char* source_addr_;
   char* config_file_;
+  int32_t buffer_size_;
   int debug_;
 };
 typedef struct options_struct options_t;

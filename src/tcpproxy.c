@@ -49,7 +49,7 @@ int main_loop(options_t* opt, listeners_t* listeners)
     return -1;
 
   clients_t clients;
-  int return_value = clients_init(&clients);
+  int return_value = clients_init(&clients, opt->buffer_size_);
 
   while(!return_value) {
     fd_set readfds, writefds;

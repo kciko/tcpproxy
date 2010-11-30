@@ -37,15 +37,18 @@
 
 typedef struct {
   int fd_[2];
-  u_int8_t write_buf_[2][BUFFER_LENGTH];
-  u_int32_t write_buf_len_[2];
+  buffer_t write_buf_[2];
+  u_int32_t write_buf_offset_[2];
 } client_t;
 
 void clients_delete_element(void* e);
 
-typedef slist_t clients_t;
+typedef struct {
+  slist_t list_;
+  int32_t buffer_size_;
+} clients_t;
 
-int clients_init(clients_t* list);
+int clients_init(clients_t* list, int32_t buffer_size);
 void clients_clear(clients_t* list);
 int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const tcp_endpoint_t source_end);
 void clients_remove(clients_t* list, int fd);
