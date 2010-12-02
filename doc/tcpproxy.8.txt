@@ -21,10 +21,13 @@ tcpproxy
   [ -L|--log <target>:<level>[,<param1>[,<param2>[..]]] ]
   [ -U|--debug ]
   [ -l|--local-addr <host> ]
+  [ -t|--local-resolv (ipv4|4|ipv6|6) ]
   [ -p|--local-port <service> ]
   [ -r|--remote-addr <host> ]
+  [ -R|--remote-resolv (ipv4|4|ipv6|6) ]
   [ -o|--remote-port <service> ]
   [ -s|--source-addr <host> ]
+  [ -S|--source-resolv (ipv4|4|ipv6|6) ]
   [ -b|--buffer-size <size> ]
   [ -c|--config <file> ]
 ....
@@ -85,25 +88,44 @@ The following options can be passed to the *tcpproxy* daemon:
    be additional output when this option is supplied.
 
 *-l, --local-addr <host>*::
-   tba
+   The local address to bind to. By default *tcpproxy* will listen on any interface
+   (IPv6 and IPv4).
+
+*-t|--local-resolv (ipv4|4|ipv6|6)*::
+   When resolving the local address (see above) use only IPv4 or IPv6. The default is
+   to resolv both.
 
 *-p, --local-port <service>*::
-   tba
+   The local port to bind to. By default there is no port defined in which case 
+   *tcpproxy* will try to read the configuration file.
 
 *-r, --remote-addr <host>*::
-   tba
+   The remote address to connect to. Unless the configuration file should be used this
+   must be set to a valid address or hostname.
+
+*-R|--remote-resolv (ipv4|4|ipv6|6)*::
+   When resolving the remote address (see above) use only IPv4 or IPv6. The default is
+   to resolv both.
 
 *-o, --remote-port <service>*::
-   tba
+   The remote port to connect to. Unless the configuration file should be used this
+   must be set to a valid port or servicename.
 
 *-s, --source-addr <host>*::
-   tba
+   Instruct tcpproxy to use this source address for connections to *-R|--remote-address*.
+   By default *tcpproxy* uses the default source address for the defined remote host.
+
+*-S|--source-resolv (ipv4|4|ipv6|6)*::
+   When resolving the source address (see above) use only IPv4 or IPv6. The default is
+   to resolv both.
 
 *-b, --buffer-size <size>*::
-   tba
+   The size of the transmit buffers to use. *tcpproxy* will allocate two buffers of this 
+   size for any client which is connected. By default a value of 10Kbytes is used.
 
 *-c, --config <file>*::
-   tba
+   The path to the configuration file to be used. This is only evaluated if the local port
+   is omitted.
 
 
 EXAMPLES

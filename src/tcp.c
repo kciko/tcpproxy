@@ -75,7 +75,10 @@ struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv
 
   int errcode = getaddrinfo(addr, port, &hints, &res);
   if (errcode != 0) {
-    log_printf(ERROR, "Error resolving address (%s:%s): %s", (addr) ? addr : "*", (port) ? port : "0", gai_strerror(errcode));
+    char* type = "";
+    if(rt == IPV4_ONLY) type = "IPv4 ";
+    else if(rt == IPV6_ONLY) type = "IPv6 ";
+    log_printf(ERROR, "Error resolving %saddress (%s:%s): %s", type, (addr) ? addr : "*", (port) ? port : "0", gai_strerror(errcode));
     return NULL;
   }
   if(!res) {

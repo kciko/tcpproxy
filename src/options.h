@@ -30,6 +30,7 @@
 
 #include "string_list.h"
 #include "datatypes.h"
+#include "tcp.h"
 
 struct options_struct {
   char* progname_;
@@ -40,10 +41,13 @@ struct options_struct {
   char* pid_file_;
   string_list_t log_targets_;
   char* local_addr_;
+  resolv_type_t lresolv_type_;
   char* local_port_;
   char* remote_addr_;
+  resolv_type_t rresolv_type_;
   char* remote_port_;
   char* source_addr_;
+  resolv_type_t sresolv_type_;
   char* config_file_;
   int32_t buffer_size_;
   int debug_;

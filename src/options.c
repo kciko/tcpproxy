@@ -30,6 +30,7 @@
 
 #include "options.h"
 #include "log.h"
+#include "tcp.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -115,6 +116,23 @@
       i++;                                               \
     }
 
+#define PARSE_RESOLV_TYPE(SHORT, LONG, VALUE)            \
+    else if(!strcmp(str,SHORT) || !strcmp(str,LONG))     \
+    {                                                    \
+      if(argc < 1 || argv[i+1][0] == '-')                \
+        return i;                                        \
+      if(!strcmp(argv[i+1], "4") ||                      \
+         !strcmp(argv[i+1], "ipv4"))                     \
+        VALUE = IPV4_ONLY;                               \
+      else if(!strcmp(argv[i+1], "6") ||                 \
+              !strcmp(argv[i+1], "ipv6"))                \
+        VALUE = IPV6_ONLY;                               \
+      else                                               \
+        return i+1;                                      \
+      argc--;                                            \
+      i++;                                               \
+    }
+
 int options_parse_hex_string(const char* hex, buffer_t* buffer)
 {
   if(!hex || !buffer)
@@ -180,10 +198,13 @@ int options_parse(options_t* opt, int argc, char* argv[])
     PARSE_STRING_LIST("-L","--log", opt->log_targets_)
     PARSE_BOOL_PARAM("-U", "--debug", opt->debug_)
     PARSE_STRING_PARAM("-l","--local-addr", opt->local_addr_)
+    PARSE_RESOLV_TYPE("-t","--local-resolv", opt->lresolv_type_)
     PARSE_STRING_PARAM("-p","--local-port", opt->local_port_)
     PARSE_STRING_PARAM("-r","--remote-addr", opt->remote_addr_)
+    PARSE_RESOLV_TYPE("-R","--remote-resolv", opt->rresolv_type_)
     PARSE_STRING_PARAM("-o","--remote-port", opt->remote_port_)
     PARSE_STRING_PARAM("-s","--source-addr", opt->source_addr_)
+    PARSE_RESOLV_TYPE("-S","--source-resolv", opt->sresolv_type_)
     PARSE_STRING_PARAM("-c","--config", opt->config_file_)
     PARSE_INT_PARAM("-b","--buffer-size", opt->buffer_size_)
     else 
@@ -225,10 +246,13 @@ void options_default(options_t* opt)
   opt->chroot_dir_ = NULL;
   opt->pid_file_ = NULL;
   opt->local_addr_ = NULL;
+  opt->lresolv_type_ = ANY;
   opt->local_port_ = NULL;
   opt->remote_addr_ = NULL;
+  opt->rresolv_type_ = ANY;
   opt->remote_port_ = NULL;
   opt->source_addr_ = NULL;
+  opt->sresolv_type_ = ANY;
   opt->config_file_ = strdup(CONFFILE);
   string_list_init(&opt->log_targets_);
   opt->buffer_size_ = 10 * 1024;
@@ -268,23 +292,26 @@ void options_clear(options_t* opt)
 void options_print_usage()
 {
   printf("USAGE:\n");
-  printf("tcpproxy [-h|--help]                         prints this...\n");
-  printf("         [-v|--version]                      print version info and exit\n");
-  printf("         [-D|--nodaemonize]                  don't run in background\n");
-  printf("         [-u|--username] <username>          change to this user\n");
-  printf("         [-g|--groupname] <groupname>        change to this group\n");
-  printf("         [-C|--chroot] <path>                chroot to this directory\n");
-  printf("         [-P|--write-pid] <path>             write pid to this file\n");
+  printf("tcpproxy [-h|--help]                          prints this...\n");
+  printf("         [-v|--version]                       print version info and exit\n");
+  printf("         [-D|--nodaemonize]                   don't run in background\n");
+  printf("         [-u|--username] <username>           change to this user\n");
+  printf("         [-g|--groupname] <groupname>         change to this group\n");
+  printf("         [-C|--chroot] <path>                 chroot to this directory\n");
+  printf("         [-P|--write-pid] <path>              write pid to this file\n");
   printf("         [-L|--log] <target>:<level>[,<param1>[,<param2>..]]\n");
-  printf("                                             add a log target, can be invoked several times\n");
-  printf("         [-U|--debug]                        don't daemonize and log to stdout with maximum log level\n");
-  printf("         [-l|--local-addr] <host>            local address to listen on\n");
-  printf("         [-p|--local-port] <service>         local port to listen on\n");
-  printf("         [-r|--remote-addr] <host>           remote address to connect to\n");
-  printf("         [-o|--remote-port] <service>        remote port to connect to\n");
-  printf("         [-s|--source-addr] <host>           source address to connect from\n");
-  printf("         [-b|--buffer-size] <size>           size of transmit buffers\n");
-  printf("         [-c|--config] <file>                configuration file\n");
+  printf("                                              add a log target, can be invoked several times\n");
+  printf("         [-U|--debug]                         don't daemonize and log to stdout with maximum log level\n");
+  printf("         [-l|--local-addr] <host>             local address to listen on\n");
+  printf("         [-t|--local-resolv] (ipv4|4|ipv6|6)  set IPv4 or IPv6 only resolving for local address\n");
+  printf("         [-p|--local-port] <service>          local port to listen on\n");
+  printf("         [-r|--remote-addr] <host>            remote address to connect to\n");
+  printf("         [-R|--remote-resolv] (ipv4|4|ipv6|6) set IPv4 or IPv6 only resolving for local address\n");
+  printf("         [-o|--remote-port] <service>         remote port to connect to\n");
+  printf("         [-s|--source-addr] <host>            source address to connect from\n");
+  printf("         [-S|--source-resolv] (ipv4|4|ipv6|6) set IPv4 or IPv6 only resolving for local address\n");
+  printf("         [-b|--buffer-size] <size>            size of transmit buffers\n");
+  printf("         [-c|--config] <file>                 configuration file\n");
 }
 
 void options_print_version()
@@ -307,10 +334,19 @@ void options_print(options_t* opt)
   printf("log_targets: \n");
   string_list_print(&opt->log_targets_, "  '", "'\n");
   printf("local_addr: '%s'\n", opt->local_addr_);
+  if(opt->lresolv_type_ == IPV4_ONLY) printf("lresolv_type: IPv4\n");
+  else if(opt->lresolv_type_ == IPV6_ONLY) printf("lresolv_type: IPv6\n");
+  else printf("lresolv_type: Both\n");
   printf("local_port: '%s'\n", opt->local_port_);
   printf("remote_addr: '%s'\n", opt->remote_addr_);
+  if(opt->rresolv_type_ == IPV4_ONLY) printf("rresolv_type: IPv4\n");
+  else if(opt->rresolv_type_ == IPV6_ONLY) printf("rresolv_type: IPv6\n");
+  else printf("rresolv_type: Both\n");
   printf("remote_port: '%s'\n", opt->remote_port_);
   printf("source_addr: '%s'\n", opt->source_addr_);
+  if(opt->sresolv_type_ == IPV4_ONLY) printf("sresolv_type: IPv4\n");
+  else if(opt->sresolv_type_ == IPV6_ONLY) printf("sresolv_type: IPv6\n");
+  else printf("sresolv_type: Both\n");
   printf("buffer-size: %d\n", opt->buffer_size_);
   printf("config_file: '%s'\n", opt->config_file_);
   printf("debug: %s\n", !opt->debug_ ? "false" : "true");

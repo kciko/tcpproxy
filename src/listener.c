@@ -66,26 +66,26 @@ void listener_clear(listeners_t* list)
   slist_clear(list);
 }
 
-int listener_add(listeners_t* list, const char* laddr, const char* lport, const char* raddr, const char* rport, const char* saddr)
+int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const char* lport, const char* raddr, resolv_type_t rrt, const char* rport, const char* saddr, resolv_type_t srt)
 {
   if(!list)
     return -1;
 
 // TODO: what if more than one address is returned here? 
-  struct addrinfo* re = tcp_resolve_endpoint(raddr, rport, ANY);
+  struct addrinfo* re = tcp_resolve_endpoint(raddr, rport, rrt);
   if(!re)
     return -1;
 
   struct addrinfo* se = NULL;
   if(saddr) {
-    se = tcp_resolve_endpoint(saddr, NULL, ANY);
+    se = tcp_resolve_endpoint(saddr, NULL, srt);
     if(!se) {
       freeaddrinfo(re);
       return -1;      
     }
   }
 
-  struct addrinfo* le = tcp_resolve_endpoint(laddr, lport, ANY);
+  struct addrinfo* le = tcp_resolve_endpoint(laddr, lport, lrt);
   if(!le) {
     freeaddrinfo(re);
     if(se)

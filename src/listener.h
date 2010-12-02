@@ -47,7 +47,7 @@ typedef slist_t listeners_t;
 
 int listener_init(listeners_t* list);
 void listener_clear(listeners_t* list);
-int listener_add(listeners_t* list, const char* laddr, const char* lport, const char* raddr, const char* rport, const char* saddr);
+int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const char* lport, const char* raddr, resolv_type_t rrt, const char* rport, const char* saddr, resolv_type_t srt);
 void listener_remove(listeners_t* list, int fd);
 listener_t* listener_find(listeners_t* list, int fd);
 void listener_print(listeners_t* list);
