@@ -87,8 +87,8 @@ manpage:
 	$(MAKE) --directory="../doc/" manpage
 
 
-INSTALL_TARGETS := install-bin install-etc
-REMOVE_TARGETS := remove-bin remove-etc
+INSTALL_TARGETS := install-bin #install-etc
+REMOVE_TARGETS := remove-bin #remove-etc
 
 ifdef MANDIR
 INSTALL_TARGETS += install-man
