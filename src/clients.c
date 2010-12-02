@@ -236,28 +236,29 @@ int clients_read(clients_t* list, fd_set* set)
     client_t* c = (client_t*)tmp->data_;
     tmp = tmp->next_;
     if(c) {
-      int in, out;
-      if(FD_ISSET(c->fd_[0], set)) {
-        in = 0;
-        out = 1;
+      int i;
+      for(i=0; i<2; ++i) {
+        int in, out;
+        if(FD_ISSET(c->fd_[i], set)) {
+          in = i;
+          out = i ^ 1;
+        }
+        else continue;
+        
+        int len = recv(c->fd_[in], &(c->write_buf_[out].buf_[c->write_buf_offset_[out]]),  c->write_buf_[out].length_ - c->write_buf_offset_[out], 0);
+        if(len < 0) {
+          log_printf(INFO, "Error on recv(): %s, removing client %d", strerror(errno), c->fd_[0]);
+          slist_remove(&(list->list_), c);
+          break;
+        }
+        else if(!len) {
+          log_printf(INFO, "client %d closed connection, removing it", c->fd_[0]);
+          slist_remove(&(list->list_), c);
+          break;
+        }       
+        else
+          c->write_buf_offset_[out] += len;
       }
-      else if(FD_ISSET(c->fd_[1], set)) {
-        in = 1;
-        out = 0;
-      }
-      else continue;
-
-      int len = recv(c->fd_[in], &(c->write_buf_[out].buf_[c->write_buf_offset_[out]]),  c->write_buf_[out].length_ - c->write_buf_offset_[out], 0);
-      if(len < 0) {
-        log_printf(INFO, "Error on recv(): %s, removing client %d", strerror(errno), c->fd_[0]);
-        slist_remove(&(list->list_), c);
-      }
-      else if(!len) {
-        log_printf(INFO, "client %d closed connection, removing it", c->fd_[0]);
-        slist_remove(&(list->list_), c);
-      }       
-      else
-        c->write_buf_offset_[out] += len;
     }
   }
   
@@ -281,6 +282,7 @@ int clients_write(clients_t* list, fd_set* set)
           if(len < 0) {
             log_printf(INFO, "Error on send(): %s, removing client %d", strerror(errno), c->fd_[0]);
             slist_remove(&(list->list_), c);
+            break;
           }
           else {
             if(c->write_buf_offset_[i] > len) {
