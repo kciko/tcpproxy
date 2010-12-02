@@ -47,7 +47,6 @@ struct options_struct {
   resolv_type_t rresolv_type_;
   char* remote_port_;
   char* source_addr_;
-  resolv_type_t sresolv_type_;
   char* config_file_;
   int32_t buffer_size_;
   int debug_;

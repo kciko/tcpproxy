@@ -27,7 +27,6 @@ tcpproxy
   [ -R|--remote-resolv (ipv4|4|ipv6|6) ]
   [ -o|--remote-port <service> ]
   [ -s|--source-addr <host> ]
-  [ -S|--source-resolv (ipv4|4|ipv6|6) ]
   [ -b|--buffer-size <size> ]
   [ -c|--config <file> ]
 ....
@@ -105,7 +104,8 @@ The following options can be passed to the *tcpproxy* daemon:
 
 *-R|--remote-resolv (ipv4|4|ipv6|6)*::
    When resolving the remote address (see above) use only IPv4 or IPv6. The default is
-   to resolv both.
+   to resolv both. Mind that this also effects resolving of the source address (see below)
+   as the remote and source addresses must be of the same protocol familiy.
 
 *-o, --remote-port <service>*::
    The remote port to connect to. Unless the configuration file should be used this
@@ -114,10 +114,6 @@ The following options can be passed to the *tcpproxy* daemon:
 *-s, --source-addr <host>*::
    Instruct tcpproxy to use this source address for connections to *-R|--remote-address*.
    By default *tcpproxy* uses the default source address for the defined remote host.
-
-*-S|--source-resolv (ipv4|4|ipv6|6)*::
-   When resolving the source address (see above) use only IPv4 or IPv6. The default is
-   to resolv both.
 
 *-b, --buffer-size <size>*::
    The size of the transmit buffers to use. *tcpproxy* will allocate two buffers of this 

@@ -66,7 +66,7 @@ void listener_clear(listeners_t* list)
   slist_clear(list);
 }
 
-int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const char* lport, const char* raddr, resolv_type_t rrt, const char* rport, const char* saddr, resolv_type_t srt)
+int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const char* lport, const char* raddr, resolv_type_t rrt, const char* rport, const char* saddr)
 {
   if(!list)
     return -1;
@@ -78,7 +78,7 @@ int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const 
 
   struct addrinfo* se = NULL;
   if(saddr) {
-    se = tcp_resolve_endpoint(saddr, NULL, srt);
+    se = tcp_resolve_endpoint(saddr, NULL, rrt);
     if(!se) {
       freeaddrinfo(re);
       return -1;      

@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     log_close();
     exit(-1);
   }
-  ret = listener_add(&listeners, opt.local_addr_, opt.lresolv_type_, opt.local_port_, opt.remote_addr_, opt.rresolv_type_, opt.remote_port_, opt.source_addr_, opt.sresolv_type_);
+  ret = listener_add(&listeners, opt.local_addr_, opt.lresolv_type_, opt.local_port_, opt.remote_addr_, opt.rresolv_type_, opt.remote_port_, opt.source_addr_);
   if(ret) {
     listener_clear(&listeners);
     options_clear(&opt);
