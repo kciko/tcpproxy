@@ -303,13 +303,13 @@ void options_print_usage()
   printf("                                              add a log target, can be invoked several times\n");
   printf("         [-U|--debug]                         don't daemonize and log to stdout with maximum log level\n");
   printf("         [-l|--local-addr] <host>             local address to listen on\n");
-  printf("         [-t|--local-resolv] (ipv4|4|ipv6|6)  set IPv4 or IPv6 only resolving for local address\n");
+  printf("         [-t|--local-resolv] (ipv4|4|ipv6|6)  set IPv4 or IPv6 only resolving for the local address\n");
   printf("         [-p|--local-port] <service>          local port to listen on\n");
   printf("         [-r|--remote-addr] <host>            remote address to connect to\n");
-  printf("         [-R|--remote-resolv] (ipv4|4|ipv6|6) set IPv4 or IPv6 only resolving for local address\n");
+  printf("         [-R|--remote-resolv] (ipv4|4|ipv6|6) set IPv4 or IPv6 only resolving for the remote address\n");
   printf("         [-o|--remote-port] <service>         remote port to connect to\n");
   printf("         [-s|--source-addr] <host>            source address to connect from\n");
-  printf("         [-S|--source-resolv] (ipv4|4|ipv6|6) set IPv4 or IPv6 only resolving for local address\n");
+  printf("         [-S|--source-resolv] (ipv4|4|ipv6|6) set IPv4 or IPv6 only resolving for the source address\n");
   printf("         [-b|--buffer-size] <size>            size of transmit buffers\n");
   printf("         [-c|--config] <file>                 configuration file\n");
 }
