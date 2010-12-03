@@ -33,6 +33,8 @@ EXECUTABLE := tcpproxy
 
 C_OBJS := log.o \
           options.o \
+          cfg_scan.o \
+          cfg_parse.o \
           slist.o \
           string_list.o \
           sig_handler.o \
@@ -46,6 +48,14 @@ C_SRCS := $(C_OBJS:%.o=%.c)
 .PHONY: clean cleanall distclean manpage install install-bin install-etc install-man uninstall remove purge
 
 all: $(EXECUTABLE)
+
+cfg_scan.c: cfg_scan.lex cfg_parse.h
+	$(FLEX) -Cem -o $@ cfg_scan.lex
+
+cfg_parse.h: cfg_parse.c
+
+cfg_parse.c: cfg_parse.y
+	$(BISON) -d -o $@ $<
 
 %.d: %.c
 	@set -e; rm -f $@; \
@@ -77,6 +87,8 @@ clean:
 	rm -f *.o
 	rm -f *.d
 	rm -f *.d.*
+	rm -f cfg_scan.c
+	rm -f cfg_parse.c cfg_parse.h
 	rm -f $(EXECUTABLE)
 	rm -f $(EXECUTABLE).exe
 

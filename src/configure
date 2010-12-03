@@ -143,6 +143,8 @@ CFLAGS := $CFLAGS
 LDFLAGS := $LDFLAGS
 STRIP := strip
 INSTALL := install
+FLEX := flex
+BISON := bison
 
 PREFIX := '$PREFIX'
 SBINDIR := '$SBINDIR'

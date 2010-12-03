@@ -40,6 +40,11 @@
 #include "listener.h"
 #include "clients.h"
 
+extern FILE *yyin;
+extern void yyinit(options_t* opt, listeners_t* listeners);
+extern int yyparse(void);
+
+
 int main_loop(options_t* opt, listeners_t* listeners)
 {
   log_printf(INFO, "entering main loop");
@@ -145,12 +150,27 @@ int main(int argc, char* argv[])
     log_close();
     exit(-1);
   }
-  ret = listener_add(&listeners, opt.local_addr_, opt.lresolv_type_, opt.local_port_, opt.remote_addr_, opt.rresolv_type_, opt.remote_port_, opt.source_addr_);
-  if(ret) {
-    listener_clear(&listeners);
-    options_clear(&opt);
-    log_close();
-    exit(-1);
+
+  if(opt.local_port_) {
+    ret = listener_add(&listeners, opt.local_addr_, opt.lresolv_type_, opt.local_port_, opt.remote_addr_, opt.rresolv_type_, opt.remote_port_, opt.source_addr_);
+    if(ret) {
+      listener_clear(&listeners);
+      options_clear(&opt);
+      log_close();
+      exit(-1);
+    }
+  } else {
+    yyin = fopen(opt.config_file_, "r");
+    if(!yyin) { 
+      log_printf(ERROR, "can't open config file %s: %s", opt.config_file_, strerror(errno));
+      listener_clear(&listeners);
+      options_clear(&opt);
+      log_close();
+      exit(-1);
+    }
+    
+    yyinit(&opt, &listeners);
+    yyparse();
   }
 
   priv_info_t priv;
