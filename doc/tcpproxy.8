@@ -2,12 +2,12 @@
 .\"     Title: tcpproxy
 .\"    Author: [see the "AUTHORS" section]
 .\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
-.\"      Date: 12/02/2010
+.\"      Date: 12/03/2010
 .\"    Manual: tcpproxy user manual
 .\"    Source: tcpproxy trunk
 .\"  Language: English
 .\"
-.TH "TCPPROXY" "8" "12/02/2010" "tcpproxy trunk" "tcpproxy user manual"
+.TH "TCPPROXY" "8" "12/03/2010" "tcpproxy trunk" "tcpproxy user manual"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -175,9 +175,27 @@ will allocate two buffers of this size for any client which is connected\&. By d
 .RS 4
 The path to the configuration file to be used\&. This is only evaluated if the local port is omitted\&.
 .RE
-.SH "EXAMPLES"
+.SH "CONFIGURATION FILE"
 .sp
-nothing yet\&.\&.
+If the configuratin file is used it should contain one or more of the following stanzas:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+listen (*|address|hostname) (port\-number|service\-name)
+{
+  resolv: (ipv4|ipv6)
+  remote: (address|hostname) (port\-number|service\-name);
+  remote\-resolv: (ipv4|ipv6);
+  source: (address|hostname);
+};
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Everything between the curly brackets except for the \fBremote\fR parameter may be omitted\&.
 .SH "BUGS"
 .sp
 Most likely there are some bugs in \fBtcpproxy\fR\&. If you find a bug, please let the developers know at tcpproxy@spreadspace\&.org\&. Of course, patches are preferred\&.

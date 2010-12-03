@@ -124,10 +124,22 @@ The following options can be passed to the *tcpproxy* daemon:
    is omitted.
 
 
-EXAMPLES
---------
+CONFIGURATION FILE
+------------------
 
-nothing yet..
+If the configuratin file is used it should contain one or more of the following stanzas:
+
+....
+listen (*|address|hostname) (port-number|service-name)
+{
+  resolv: (ipv4|ipv6)
+  remote: (address|hostname) (port-number|service-name);
+  remote-resolv: (ipv4|ipv6);
+  source: (address|hostname);
+};
+....
+
+Everything between the curly brackets except for the *remote* parameter may be omitted.
 
 
 BUGS
