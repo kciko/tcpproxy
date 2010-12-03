@@ -72,20 +72,20 @@ int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const 
     return -1;
 
 // TODO: what if more than one address is returned here? 
-  struct addrinfo* re = tcp_resolve_endpoint(raddr, rport, rrt);
+  struct addrinfo* re = tcp_resolve_endpoint(raddr, rport, rrt, 0);
   if(!re)
     return -1;
 
   struct addrinfo* se = NULL;
   if(saddr) {
-    se = tcp_resolve_endpoint(saddr, NULL, rrt);
+    se = tcp_resolve_endpoint(saddr, NULL, rrt, 0);
     if(!se) {
       freeaddrinfo(re);
       return -1;      
     }
   }
 
-  struct addrinfo* le = tcp_resolve_endpoint(laddr, lport, lrt);
+  struct addrinfo* le = tcp_resolve_endpoint(laddr, lport, lrt, 1);
   if(!le) {
     freeaddrinfo(re);
     if(se)

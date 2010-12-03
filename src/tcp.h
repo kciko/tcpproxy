@@ -40,6 +40,6 @@ typedef struct {
 } tcp_endpoint_t;
 
 char* tcp_endpoint_to_string(tcp_endpoint_t e);
-struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv_type_t rt);
+struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv_type_t rt, int passive);
 
 #endif

@@ -58,14 +58,15 @@ char* tcp_endpoint_to_string(tcp_endpoint_t e)
   return ret;
 }
 
-struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv_type_t rt)
+struct addrinfo* tcp_resolve_endpoint(const char* addr, const char* port, resolv_type_t rt, int passive)
 {
   struct addrinfo hints, *res;
 
   res = NULL;
   memset (&hints, 0, sizeof (hints));
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+  if(passive)
+    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
 
   switch(rt) {
   case IPV4_ONLY: hints.ai_family = AF_INET; break;
