@@ -39,7 +39,7 @@ void yyerror(const char *);
 int yylex(void);
 
 int line_cnt = 1;
-options_t* gopt;
+const char* config_file_;
 listeners_t* glisteners;
 
 struct listener {
@@ -122,9 +122,9 @@ static void merge_listener_struct(struct listener* dest, struct listener* src)
 }
 
 
-void yyinit(options_t* opt, listeners_t* listeners)
+void yyinit(const char* config_file, listeners_t* listeners)
 {
-  gopt = opt;
+  config_file_ = config_file;
   glisteners = listeners;
 }
 
@@ -167,8 +167,10 @@ void yyinit(options_t* opt, listeners_t* listeners)
 %type <rtype> resolv_type
 %type <string> service
 %type <string> host_or_addr
-%%
 
+%error-verbose
+
+%%
 cfg: 
                | cfg listen
                ;
@@ -180,10 +182,7 @@ listen:          listen_head TOK_OPEN listen_body TOK_CLOSE TOK_SEMICOLON
   int ret = listener_add(glisteners, $1->la_, $1->lrt_, $1->lp_, $1->ra_, $1->rrt_, $1->rp_, $1->sa_);
   clear_listener_struct($1);
   if(ret) {
-    listener_clear(glisteners);
-    options_clear(gopt);
-    log_close();
-    exit(-1);
+    YYABORT;
   }
 }
 ;
@@ -269,10 +268,6 @@ host_or_addr:    TOK_NUMBER
 
 void yyerror (const char *string)
 {
-  log_printf(ERROR, "%s:%d %s\n", gopt->config_file_, line_cnt, string);
-  listener_clear(glisteners);
-  options_clear(gopt);
-  log_close();
-  exit(1);
+  log_printf(ERROR, "%s:%d %s\n", config_file_, line_cnt, string);
 }
 

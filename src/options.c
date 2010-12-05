@@ -219,6 +219,11 @@ int options_parse(options_t* opt, int argc, char* argv[])
     string_list_add(&opt->log_targets_, "syslog:3,tcpproxy,daemon");
   }
 
+  if(!opt->local_port_ && !opt->config_file_) {
+    opt->config_file_ = strdup(CONFFILE);
+    if(!opt->config_file_) return -2;
+  }
+
   return 0;
 }
 
@@ -226,6 +231,10 @@ void options_parse_post(options_t* opt)
 {
   if(!opt)
     return;
+
+  if(opt->config_file_ && opt->local_port_) {
+    log_printf(WARNING, "local port and config file specified, will ignore config file");
+  }
 
   if(opt->buffer_size_ <= 0) {
     log_printf(WARNING, "illegal buffer size %d using default buffer size", opt->buffer_size_);
@@ -251,7 +260,7 @@ void options_default(options_t* opt)
   opt->rresolv_type_ = ANY;
   opt->remote_port_ = NULL;
   opt->source_addr_ = NULL;
-  opt->config_file_ = strdup(CONFFILE);
+  opt->config_file_ = NULL;
   string_list_init(&opt->log_targets_);
   opt->buffer_size_ = 10 * 1024;
   opt->debug_ = 0;

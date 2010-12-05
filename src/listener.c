@@ -71,6 +71,10 @@ int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const 
   if(!list)
     return -1;
 
+  if(!lport) { log_printf(ERROR, "no local port specified"); return -1; }
+  if(!raddr) { log_printf(ERROR, "no remote address specified"); return -1; }
+  if(!rport) { log_printf(ERROR, "no remote port specified"); return -1; }
+
 // TODO: what if more than one address is returned here? 
   struct addrinfo* re = tcp_resolve_endpoint(raddr, rport, rrt, 0);
   if(!re)

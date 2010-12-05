@@ -41,7 +41,7 @@
 #include "clients.h"
 
 extern FILE *yyin;
-extern void yyinit(options_t* opt, listeners_t* listeners);
+extern void yyinit(const char* config_file, listeners_t* listeners);
 extern int yyparse(void);
 
 
@@ -169,11 +169,12 @@ int main(int argc, char* argv[])
       exit(-1);
     }
     
-    yyinit(&opt, &listeners);
-    yyparse();
-
-    if(!slist_length(&listeners)) {
-      log_printf(ERROR, "no listeners defined in config file %s", opt.config_file_);
+    yyinit(opt.config_file_, &listeners);
+    int ret = yyparse();
+    fclose(yyin);
+    if(ret || !slist_length(&listeners)) {
+      if(!ret)
+        log_printf(ERROR, "no listeners defined in config file %s", opt.config_file_);
       listener_clear(&listeners);
       options_clear(&opt);
       log_close();
