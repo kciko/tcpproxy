@@ -57,9 +57,3 @@ This removes everything except for the config files
 # sudo make purge
 
 This also removes the config files
-
-
-Usage:
-======
-
-tba..
