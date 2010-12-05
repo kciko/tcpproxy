@@ -150,7 +150,7 @@ the developers know at tcpproxy@spreadspace.org. Of course, patches are preferre
 
 SEE ALSO
 --------
-nothing yet..
+rinetd(8)
 
 
 AUTHORS

@@ -90,7 +90,6 @@ clean:
 	rm -f cfg_scan.c
 	rm -f cfg_parse.c cfg_parse.h
 	rm -f $(EXECUTABLE)
-	rm -f $(EXECUTABLE).exe
 
 cleanall: clean
 	$(MAKE) --directory="../doc/" clean
@@ -99,8 +98,8 @@ manpage:
 	$(MAKE) --directory="../doc/" manpage
 
 
-INSTALL_TARGETS := install-bin #install-etc
-REMOVE_TARGETS := remove-bin #remove-etc
+INSTALL_TARGETS := install-bin install-etc
+REMOVE_TARGETS := remove-bin remove-etc
 
 ifdef MANDIR
 INSTALL_TARGETS += install-man
@@ -115,15 +114,20 @@ endif
 install: all $(INSTALL_TARGETS)
 
 install-bin: $(EXECUTABLE)
-	$(INSTALL) -d $(DESTDIR)$(SBINDIR)
-	$(INSTALL) -m 755 $(EXECUTABLE) $(DESTDIR)$(SBINDIR)
+	$(INSTALL) -d $(DESTDIR)$(BINDIR)
+	$(INSTALL) -m 755 $(EXECUTABLE) $(DESTDIR)$(BINDIR)
 
 install-etc:
-	$(INSTALL) -d $(DESTDIR)$(ETCDIR)/$(EXECUTABLE)
-	@ echo "example configurations can be found at $(EXAMPLESDIR)/$(EXECUTABLE)" > $(DESTDIR)$(ETCDIR)/$(EXECUTABLE)/README
+	$(INSTALL) -d $(DESTDIR)$(ETCDIR)/init.d/
+	$(INSTALL) -m 755 ../contrib/initscript $(DESTDIR)$(ETCDIR)/init.d/$(EXECUTABLE)
+	$(INSTALL) -d $(DESTDIR)$(ETCDIR)/default/
+	$(INSTALL) -m 644 ../contrib/default $(DESTDIR)$(ETCDIR)/default/$(EXECUTABLE)
+	@ echo "# $(EXECUTABLE) configuration file" > $(DESTDIR)$(ETCDIR)/$(EXECUTABLE).conf
+	@ echo "# example configurations can be found at $(EXAMPLESDIR)/$(EXECUTABLE)" >> $(DESTDIR)$(ETCDIR)/$(EXECUTABLE).conf
 
 install-examples:
 	$(INSTALL) -d $(DESTDIR)$(EXAMPLESDIR)/$(EXECUTABLE)
+	$(INSTALL) -m 644 ../contrib/example.conf $(DESTDIR)$(EXAMPLESDIR)/$(EXECUTABLE)/
 
 install-man: manpage
 	$(INSTALL) -d $(DESTDIR)$(MANDIR)/man8/
@@ -134,7 +138,7 @@ uninstall: remove
 remove: $(REMOVE_TARGETS)
 
 remove-bin:
-	rm -f $(DESTDIR)$(SBINDIR)/$(EXECUTABLE)
+	rm -f $(DESTDIR)$(BINDIR)/$(EXECUTABLE)
 
 remove-etc:
 	rm -f $(DESTDIR)$(ETCDIR)/init.d/$(EXECUTABLE)
@@ -146,4 +150,5 @@ remove-man:
 	rm -f $(DESTDIR)$(MANDIR)/man8/$(EXECUTABLE).8
 
 purge: remove
-	rm -rf $(DESTDIR)$(ETCDIR)/$(EXECUTABLE)/
+	rm -f $(DESTDIR)$(ETCDIR)/$(EXECUTABLE).conf
+	rm -f $(DESTDIR)$(ETCDIR)/default/$(EXECUTABLE)
