@@ -171,6 +171,14 @@ int main(int argc, char* argv[])
     
     yyinit(&opt, &listeners);
     yyparse();
+
+    if(!slist_length(&listeners)) {
+      log_printf(ERROR, "no listeners defined in config file %s", opt.config_file_);
+      listener_clear(&listeners);
+      options_clear(&opt);
+      log_close();
+      exit(-1);
+    }
   }
 
   priv_info_t priv;

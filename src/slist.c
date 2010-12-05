@@ -115,3 +115,16 @@ void slist_clear(slist_t* lst)
   
   lst->first_ = NULL;
 }
+
+int slist_length(slist_t* lst)
+{
+  if(!lst || !lst->first_)
+    return 0;
+  
+  int len = 0;
+  slist_element_t* tmp;
+  for(tmp = lst->first_; tmp; tmp = tmp->next_)
+    len++;
+  
+  return len;
+}

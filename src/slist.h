@@ -46,5 +46,6 @@ int slist_init(slist_t* lst, void (*delete_element)(void*));
 slist_element_t* slist_add(slist_t* lst, void* data);
 void slist_remove(slist_t* lst, void* data);
 void slist_clear(slist_t* lst);
+int slist_length(slist_t* lst);
 
 #endif
