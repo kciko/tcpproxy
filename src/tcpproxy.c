@@ -1,14 +1,14 @@
 /*
  *  tcpproxy
  *
- *  tcpproxy is a simple tcp connection proxy which combines the 
- *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and 
- *  IPv6 and also supports connections from IPv6 to IPv4 
+ *  tcpproxy is a simple tcp connection proxy which combines the
+ *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and
+ *  IPv6 and also supports connections from IPv6 to IPv4
  *  endpoints and vice versa.
- *  
+ *
  *
  *  Copyright (C) 2010-2011 Christian Pointner <equinox@spreadspace.org>
- *                         
+ *
  *  This file is part of tcpproxy.
  *
  *  tcpproxy is free software: you can redistribute it and/or modify
@@ -39,11 +39,7 @@
 
 #include "listener.h"
 #include "clients.h"
-
-extern FILE *yyin;
-extern void yyinit(const char* config_file, listeners_t* listeners);
-extern int yyparse(void);
-
+#include "cfg_parser.h"
 
 int main_loop(options_t* opt, listeners_t* listeners)
 {
@@ -112,7 +108,7 @@ int main(int argc, char* argv[])
       options_print_version();
     }
 
-    if(ret != -2 && ret != -3) 
+    if(ret != -2 && ret != -3)
       options_print_usage();
 
     if(ret == -1 || ret == -3)
@@ -132,7 +128,7 @@ int main(int argc, char* argv[])
       case -4: fprintf(stderr, "this log target is only allowed once: '%s', exitting\n", (char*)(tmp->data_)); break;
       default: fprintf(stderr, "syntax error near: '%s', exitting\n", (char*)(tmp->data_)); break;
       }
-      
+
       options_clear(&opt);
       log_close();
       exit(ret);
@@ -160,18 +156,7 @@ int main(int argc, char* argv[])
       exit(-1);
     }
   } else {
-    yyin = fopen(opt.config_file_, "r");
-    if(!yyin) { 
-      log_printf(ERROR, "can't open config file %s: %s", opt.config_file_, strerror(errno));
-      listener_clear(&listeners);
-      options_clear(&opt);
-      log_close();
-      exit(-1);
-    }
-    
-    yyinit(opt.config_file_, &listeners);
-    int ret = yyparse();
-    fclose(yyin);
+    ret = read_configfile(opt.config_file_, &listeners);
     if(ret || !slist_length(&listeners)) {
       if(!ret)
         log_printf(ERROR, "no listeners defined in config file %s", opt.config_file_);
@@ -212,7 +197,7 @@ int main(int argc, char* argv[])
       options_clear(&opt);
       log_close();
       exit(-1);
-    }  
+    }
 
   if(opt.daemonize_) {
     pid_t oldpid = getpid();

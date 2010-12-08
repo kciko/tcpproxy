@@ -14,8 +14,7 @@ Linux
 
 core:
  build-essential
- flex
- bison
+ ragel
 
 if you want to rebuild the manpage:
  asciidoc
