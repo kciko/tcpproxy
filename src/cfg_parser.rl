@@ -112,17 +112,17 @@ static int owrt_string(char** dest, char* start, char* end)
   }
 
   newline = '\n' @{cur_line++;};
-  ws = ( " " | "\t" );
+  ws = [ \t];
   comment = '#' [^\n]* newline;
-  ign = ( ws | comment | newline );
+  ign = ( ws | comment | newline | [\v\f\r] );
 
   number = [0-9]+;
   ipv4_addr = [0-9.]+;
   ipv6_addr = [0-9a-fA-F:]+;
   name = [a-zA-Z0-9\-]+;
   host_name = [a-zA-Z0-9\-.]+;
-  tok_ipv4 = "ipv4";
-  tok_ipv6 = "ipv6";
+  tok_ipv4 = "ipv4"i;
+  tok_ipv6 = "ipv6"i;
 
   host_or_addr = ( host_name | ipv4_addr | ipv6_addr );
   service = ( number | name );
@@ -160,10 +160,17 @@ int parse_listener(char* p, char* pe, listeners_t* listener)
   struct listener lst;
   init_listener_struct(&lst);
   
+  char* eof = pe;
   %% write exec;
   
   if(cs == cfg_parser_error)  {
     log_printf(ERROR, "config file syntax error at line %d", cur_line);
+    ret = 1;
+  }
+
+      // we only have one file so if we aren't there something is wrong
+  if(cs != cfg_parser_first_final)  {
+    log_printf(ERROR, "config file syntax error: unexpected end of file");
     ret = 1;
   }
 
