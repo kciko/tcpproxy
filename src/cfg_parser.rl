@@ -101,23 +101,20 @@ static int owrt_string(char** dest, char* start, char* end)
   action set_local_port { ret = owrt_string(&(lst.lp_), cpy_start, fpc); cpy_start = NULL; }
   action set_local_resolv4 { lst.lrt_ = IPV4_ONLY; }
   action set_local_resolv6 { lst.lrt_ = IPV6_ONLY; }
-
   action set_remote_addr { ret = owrt_string(&(lst.ra_), cpy_start, fpc); cpy_start = NULL; }
   action set_remote_port { ret = owrt_string(&(lst.rp_), cpy_start, fpc); cpy_start = NULL; }
   action set_remote_resolv4 { lst.rrt_ = IPV4_ONLY; }
   action set_remote_resolv6 { lst.rrt_ = IPV6_ONLY; }
-
   action set_source_addr { ret = owrt_string(&(lst.sa_), cpy_start, fpc); cpy_start = NULL; }
-
   action add_listener {
-    log_printf(DEBUG, "line %d: adding listner: %s : %s -> %s : %s (%s)", cur_line, lst.la_ ? lst.la_ : "(null)", lst.lp_ ? lst.lp_ : "(null)", lst.ra_ ? lst.ra_ : "(null)", lst.rp_ ? lst.rp_ : "(null)", lst.sa_ ? lst.sa_ : "(null)");
     ret = listener_add(listener, lst.la_, lst.lrt_, lst.lp_, lst.ra_, lst.rrt_, lst.rp_, lst.sa_);
     clear_listener_struct(&lst);
   }
 
   newline = '\n' @{cur_line++;};
   ws = ( " " | "\t" );
-  wsn= ( ws | newline );
+  comment = '#' [^\n]* newline;
+  ign = ( ws | comment | newline );
 
   number = [0-9]+;
   ipv4_addr = [0-9.]+;
@@ -127,7 +124,7 @@ static int owrt_string(char** dest, char* start, char* end)
   tok_ipv4 = "ipv4";
   tok_ipv6 = "ipv6";
 
-  host_or_addr = ( host_name | name | ipv4_addr | ipv6_addr );
+  host_or_addr = ( host_name | ipv4_addr | ipv6_addr );
   service = ( number | name );
 
   local_addr = ( '*' | host_or_addr >set_cpy_start %set_local_addr );
@@ -146,9 +143,9 @@ static int owrt_string(char** dest, char* start, char* end)
   source = "source" ws* ":" ws+ source_addr ws* ";";
 
   listen_head = 'listen' ws+ local_addr ws+ local_port;
-  listen_body = '{' ( wsn+ | resolv | remote | remote_resolv | source )* '};' @add_listener;
+  listen_body = '{' ( ign+ | resolv | remote | remote_resolv | source )* '};' @add_listener;
 
-  main := ( listen_head wsn* listen_body | wsn+ )*;
+  main := ( listen_head ign* listen_body | ign+ )*;
 }%%
 
 
@@ -166,7 +163,8 @@ int parse_listener(char* p, char* pe, listeners_t* listener)
   %% write exec;
   
   if(cs == cfg_parser_error)  {
-    log_printf(ERROR, "syntax error in line %d", cur_line);
+    log_printf(ERROR, "config file syntax error at line %d", cur_line);
+    ret = 1;
   }
 
   clear_listener_struct(&lst);
@@ -189,8 +187,14 @@ int read_configfile(const char* filename, listeners_t* listener)
     return -1;
   }
 
+  if(!sb.st_size) {
+    log_printf(ERROR, "config file %s is empty", filename);
+    close(fd);
+    return -1;
+  }
+
   if(!S_ISREG(sb.st_mode)) {
-    log_printf(ERROR, "%s no regular file", filename);
+    log_printf(ERROR, "config file %s is not a regular file", filename);
     close(fd);
     return -1;
   }
