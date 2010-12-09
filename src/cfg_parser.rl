@@ -107,7 +107,7 @@ static int owrt_string(char** dest, char* start, char* end)
   action set_remote_resolv6 { lst.rrt_ = IPV6_ONLY; }
   action set_source_addr { ret = owrt_string(&(lst.sa_), cpy_start, fpc); cpy_start = NULL; }
   action add_listener {
-    ret = listener_add(listener, lst.la_, lst.lrt_, lst.lp_, lst.ra_, lst.rrt_, lst.rp_, lst.sa_);
+    ret = listeners_add(listener, lst.la_, lst.lrt_, lst.lp_, lst.ra_, lst.rrt_, lst.rp_, lst.sa_);
     clear_listener_struct(&lst);
   }
 

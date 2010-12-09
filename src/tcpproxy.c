@@ -58,7 +58,7 @@ int main_loop(options_t* opt, listeners_t* listeners)
     FD_ZERO(&writefds);
     FD_SET(sig_fd, &readfds);
     int nfds = sig_fd;
-    listener_read_fds(listeners, &readfds, &nfds);
+    listeners_read_fds(listeners, &readfds, &nfds);
     clients_read_fds(&clients, &readfds, &nfds);
     clients_write_fds(&clients, &writefds, &nfds);
     int ret = select(nfds + 1, &readfds, &writefds, NULL, NULL);
@@ -77,7 +77,7 @@ int main_loop(options_t* opt, listeners_t* listeners)
       }
     }
 
-    return_value = listener_handle_accept(listeners, &clients, &readfds);
+    return_value = listeners_handle_accept(listeners, &clients, &readfds);
     if(return_value) break;
 
     return_value = clients_write(&clients, &writefds);
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
   options_parse_post(&opt);
 
   listeners_t listeners;
-  ret = listener_init(&listeners);
+  ret = listeners_init(&listeners);
   if(ret) {
     options_clear(&opt);
     log_close();
@@ -148,9 +148,9 @@ int main(int argc, char* argv[])
   }
 
   if(opt.local_port_) {
-    ret = listener_add(&listeners, opt.local_addr_, opt.lresolv_type_, opt.local_port_, opt.remote_addr_, opt.rresolv_type_, opt.remote_port_, opt.source_addr_);
+    ret = listeners_add(&listeners, opt.local_addr_, opt.lresolv_type_, opt.local_port_, opt.remote_addr_, opt.rresolv_type_, opt.remote_port_, opt.source_addr_);
     if(ret) {
-      listener_clear(&listeners);
+      listeners_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
@@ -160,16 +160,16 @@ int main(int argc, char* argv[])
     if(ret || !slist_length(&listeners)) {
       if(!ret)
         log_printf(ERROR, "no listeners defined in config file %s", opt.config_file_);
-      listener_clear(&listeners);
+      listeners_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
     }
   }
 
-  ret = listener_activate(&listeners);
+  ret = listeners_activate(&listeners);
   if(ret) {
-    listener_clear(&listeners);
+    listeners_clear(&listeners);
     options_clear(&opt);
     log_close();
     exit(-1);
@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
   priv_info_t priv;
   if(opt.username_)
     if(priv_init(&priv, opt.username_, opt.groupname_)) {
-      listener_clear(&listeners);
+      listeners_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
@@ -194,14 +194,14 @@ int main(int argc, char* argv[])
 
   if(opt.chroot_dir_)
     if(do_chroot(opt.chroot_dir_)) {
-      listener_clear(&listeners);
+      listeners_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
     }
   if(opt.username_)
     if(priv_drop(&priv)) {
-      listener_clear(&listeners);
+      listeners_clear(&listeners);
       options_clear(&opt);
       log_close();
       exit(-1);
@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
 
   ret = main_loop(&opt, &listeners);
 
-  listener_clear(&listeners);
+  listeners_clear(&listeners);
   options_clear(&opt);
 
   if(!ret)

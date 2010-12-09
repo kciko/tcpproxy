@@ -45,7 +45,7 @@
 
 #include "clients.h"
 
-void listener_delete_element(void* e)
+void listeners_delete_element(void* e)
 {
   if(!e)
     return;
@@ -57,17 +57,17 @@ void listener_delete_element(void* e)
   free(e);
 }
 
-int listener_init(listeners_t* list)
+int listeners_init(listeners_t* list)
 {
-  return slist_init(list, &listener_delete_element);
+  return slist_init(list, &listeners_delete_element);
 }
 
-void listener_clear(listeners_t* list)
+void listeners_clear(listeners_t* list)
 {
   slist_clear(list);
 }
 
-int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const char* lport, const char* raddr, resolv_type_t rrt, const char* rport, const char* saddr)
+int listeners_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const char* lport, const char* raddr, resolv_type_t rrt, const char* rport, const char* saddr)
 {
   if(!list)
     return -1;
@@ -138,7 +138,55 @@ int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const 
   return ret;
 }
 
-int listener_activate(listeners_t* list)
+static int activate_listener(listener_t* l)
+{
+  l->fd_ = socket(l->local_end_.addr_.ss_family, SOCK_STREAM, 0);
+  if(l->fd_ < 0) {
+    log_printf(ERROR, "Error on opening tcp socket: %s", strerror(errno));
+    l->state_ = ZOMBIE;
+    return -1;
+  }
+  
+  int on = 1;
+  int ret = setsockopt(l->fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+  if(ret) {
+    log_printf(ERROR, "Error on setsockopt(): %s", strerror(errno));
+    l->state_ = ZOMBIE;
+    return -1;
+  }
+  if(l->local_end_.addr_.ss_family == AF_INET6) {
+    if(setsockopt(l->fd_, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)))
+      log_printf(WARNING, "failed to set IPV6_V6ONLY socket option: %s", strerror(errno));
+  }
+  
+  ret = bind(l->fd_, (struct sockaddr *)&(l->local_end_.addr_), l->local_end_.len_);
+  if(ret) {
+    log_printf(ERROR, "Error on bind(): %s", strerror(errno));
+    l->state_ = ZOMBIE;
+    return -1;
+  }
+  
+  ret = listen(l->fd_, 0);
+  if(ret) {
+    log_printf(ERROR, "Error on listen(): %s", strerror(errno));
+    l->state_ = ZOMBIE;
+    return -1;
+  }
+  
+  l->state_ = ACTIVE;
+  
+  char* ls = tcp_endpoint_to_string(l->local_end_);
+  char* rs = tcp_endpoint_to_string(l->remote_end_);
+  char* ss = tcp_endpoint_to_string(l->source_end_);
+  log_printf(NOTICE, "listening on: %s (remote: %s%s%s)", ls ? ls:"(null)", rs ? rs:"(null)", ss ? " with source " : "", ss ? ss : "");
+  if(ls) free(ls);
+  if(rs) free(rs);
+  if(ss) free(ss);
+
+  return 0;
+}
+
+int listeners_activate(listeners_t* list)
 {
   if(!list)
     return;
@@ -147,61 +195,18 @@ int listener_activate(listeners_t* list)
   slist_element_t* tmp = list->first_;
   while(tmp) {
     listener_t* l = (listener_t*)tmp->data_;
-    if(l && l->state_ == NEW) {
-      l->fd_ = socket(l->local_end_.addr_.ss_family, SOCK_STREAM, 0);
-      if(l->fd_ < 0) {
-        log_printf(ERROR, "Error on opening tcp socket: %s", strerror(errno));
-        l->state_ = ZOMBIE;
-        ret = -1;
-        break;
-      }
+    if(l && l->state_ == NEW)
+      ret = activate_listener(l);
 
-      int on = 1;
-      ret = setsockopt(l->fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-      if(ret) {
-        log_printf(ERROR, "Error on setsockopt(): %s", strerror(errno));
-        l->state_ = ZOMBIE;
-        ret = -1;
-        break;
-      }
-      if(l->local_end_.addr_.ss_family == AF_INET6) {
-        if(setsockopt(l->fd_, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)))
-          log_printf(WARNING, "failed to set IPV6_V6ONLY socket option: %s", strerror(errno));
-      }
-
-      ret = bind(l->fd_, (struct sockaddr *)&(l->local_end_.addr_), l->local_end_.len_);
-      if(ret) {
-        log_printf(ERROR, "Error on bind(): %s", strerror(errno));
-        l->state_ = ZOMBIE;
-        ret = -1;
-        break;
-      }
-
-      ret = listen(l->fd_, 0);
-      if(ret) {
-        log_printf(ERROR, "Error on listen(): %s", strerror(errno));
-        l->state_ = ZOMBIE;
-        ret = -1;
-        break;
-      }
-
-      l->state_ = ACTIVE;
-
-      char* ls = tcp_endpoint_to_string(l->local_end_);
-      char* rs = tcp_endpoint_to_string(l->remote_end_);
-      char* ss = tcp_endpoint_to_string(l->source_end_);
-      log_printf(NOTICE, "listening on: %s (remote: %s%s%s)", ls ? ls:"(null)", rs ? rs:"(null)", ss ? " with source " : "", ss ? ss : "");
-      if(ls) free(ls);
-      if(rs) free(rs);
-      if(ss) free(ss);
-    }
+    if(ret)
+      break;
     tmp = tmp->next_;
   }
 
   return ret;
 }
 
-void listener_cleanup(listeners_t* list)
+void listeners_cleanup(listeners_t* list)
 {
   if(!list)
     return;
@@ -215,12 +220,12 @@ void listener_cleanup(listeners_t* list)
   }
 }
 
-void listener_remove(listeners_t* list, int fd)
+void listeners_remove(listeners_t* list, int fd)
 {
-  slist_remove(list, listener_find(list, fd));
+  slist_remove(list, listeners_find(list, fd));
 }
 
-listener_t* listener_find(listeners_t* list, int fd)
+listener_t* listeners_find(listeners_t* list, int fd)
 {
   if(!list)
     return NULL;
@@ -236,7 +241,7 @@ listener_t* listener_find(listeners_t* list, int fd)
   return NULL;
 }
 
-void listener_print(listeners_t* list)
+void listeners_print(listeners_t* list)
 {
   if(!list)
     return;
@@ -263,7 +268,7 @@ void listener_print(listeners_t* list)
   }
 }
 
-void listener_read_fds(listeners_t* list, fd_set* set, int* max_fd)
+void listeners_read_fds(listeners_t* list, fd_set* set, int* max_fd)
 {
   if(!list)
     return;
@@ -279,7 +284,7 @@ void listener_read_fds(listeners_t* list, fd_set* set, int* max_fd)
   }
 }
 
-int listener_handle_accept(listeners_t* list, clients_t* clients, fd_set* set)
+int listeners_handle_accept(listeners_t* list, clients_t* clients, fd_set* set)
 {
   if(!list)
     return -1;
