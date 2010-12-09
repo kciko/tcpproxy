@@ -34,11 +34,15 @@
 #include "tcp.h"
 #include "clients.h"
 
+enum listener_state_enum { NEW, ACTIVE, ZOMBIE };
+typedef enum listener_state_enum listener_state_t;
+
 typedef struct {
   int fd_;
   tcp_endpoint_t local_end_;
   tcp_endpoint_t remote_end_;
   tcp_endpoint_t source_end_;
+  listener_state_t state_;
 } listener_t;
 
 void listener_delete_element(void* e);
@@ -48,6 +52,8 @@ typedef slist_t listeners_t;
 int listener_init(listeners_t* list);
 void listener_clear(listeners_t* list);
 int listener_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const char* lport, const char* raddr, resolv_type_t rrt, const char* rport, const char* saddr);
+int listener_activate(listeners_t* list);
+void listener_cleanup(listeners_t* list);
 void listener_remove(listeners_t* list, int fd);
 listener_t* listener_find(listeners_t* list, int fd);
 void listener_print(listeners_t* list);

@@ -167,6 +167,14 @@ int main(int argc, char* argv[])
     }
   }
 
+  ret = listener_activate(&listeners);
+  if(ret) {
+    listener_clear(&listeners);
+    options_clear(&opt);
+    log_close();
+    exit(-1);
+  }
+
   priv_info_t priv;
   if(opt.username_)
     if(priv_init(&priv, opt.username_, opt.groupname_)) {
