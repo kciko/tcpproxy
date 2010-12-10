@@ -71,9 +71,16 @@ int main_loop(options_t* opt, listeners_t* listeners)
       continue;
 
     if(FD_ISSET(sig_fd, &readfds)) {
-      if(signal_handle()) {
-        return_value = 1;
-        break;
+      return_value = signal_handle();
+      if(return_value == 1) break;
+      if(return_value == 2) {
+        if(opt->config_file_) {
+          log_printf(NOTICE, "re-reading config file: %s", opt->config_file_);
+          read_configfile(opt->config_file_, listeners);
+        } else
+          log_printf(NOTICE, "ignoring SIGHUP: no config file specified");
+
+        return_value = 0;
       }
     }
 
@@ -149,6 +156,7 @@ int main(int argc, char* argv[])
 
   if(opt.local_port_) {
     ret = listeners_add(&listeners, opt.local_addr_, opt.lresolv_type_, opt.local_port_, opt.remote_addr_, opt.rresolv_type_, opt.remote_port_, opt.source_addr_);
+    if(!ret) ret = listeners_update(&listeners);
     if(ret) {
       listeners_clear(&listeners);
       options_clear(&opt);
@@ -165,14 +173,6 @@ int main(int argc, char* argv[])
       log_close();
       exit(-1);
     }
-  }
-
-  ret = listeners_activate(&listeners);
-  if(ret) {
-    listeners_clear(&listeners);
-    options_clear(&opt);
-    log_close();
-    exit(-1);
   }
 
   priv_info_t priv;

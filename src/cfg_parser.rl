@@ -163,17 +163,18 @@ int parse_listener(char* p, char* pe, listeners_t* listener)
   char* eof = pe;
   %% write exec;
   
-  if(cs == cfg_parser_error)  {
+  if(cs == cfg_parser_error) {
     log_printf(ERROR, "config file syntax error at line %d", cur_line);
+    listeners_revert(listener);
     ret = 1;
-  }
-
-      // we only have one file so if we aren't there something is wrong
-  if(cs != cfg_parser_first_final)  {
+  } else if(cs != cfg_parser_first_final) {
+        // we only have one file so if we aren't there something is wrong
     log_printf(ERROR, "config file syntax error: unexpected end of file");
+    listeners_revert(listener);
     ret = 1;
-  }
-
+  } else
+    ret = listeners_update(listener);
+  
   clear_listener_struct(&lst);
 
   return ret;

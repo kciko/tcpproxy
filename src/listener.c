@@ -1,14 +1,14 @@
 /*
  *  tcpproxy
  *
- *  tcpproxy is a simple tcp connection proxy which combines the 
- *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and 
- *  IPv6 and also supports connections from IPv6 to IPv4 
+ *  tcpproxy is a simple tcp connection proxy which combines the
+ *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and
+ *  IPv6 and also supports connections from IPv6 to IPv4
  *  endpoints and vice versa.
- *  
+ *
  *
  *  Copyright (C) 2010-2011 Christian Pointner <equinox@spreadspace.org>
- *                         
+ *
  *  This file is part of tcpproxy.
  *
  *  tcpproxy is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ void listeners_delete_element(void* e)
 {
   if(!e)
     return;
-  
+
   listener_t* element = (listener_t*)e;
   if(element->fd_ >= 0)
     close(element->fd_);
@@ -76,7 +76,7 @@ int listeners_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const
   if(!raddr) { log_printf(ERROR, "no remote address specified"); return -1; }
   if(!rport) { log_printf(ERROR, "no remote port specified"); return -1; }
 
-// TODO: what if more than one address is returned here? 
+// TODO: what if more than one address is returned here?
   struct addrinfo* re = tcp_resolve_endpoint(raddr, rport, rrt, 0);
   if(!re)
     return -1;
@@ -86,7 +86,7 @@ int listeners_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const
     se = tcp_resolve_endpoint(saddr, NULL, rrt, 0);
     if(!se) {
       freeaddrinfo(re);
-      return -1;      
+      return -1;
     }
   }
 
@@ -140,13 +140,16 @@ int listeners_add(listeners_t* list, const char* laddr, resolv_type_t lrt, const
 
 static int activate_listener(listener_t* l)
 {
+  if(!l || l->state_ != NEW)
+    return -1;
+
   l->fd_ = socket(l->local_end_.addr_.ss_family, SOCK_STREAM, 0);
   if(l->fd_ < 0) {
     log_printf(ERROR, "Error on opening tcp socket: %s", strerror(errno));
     l->state_ = ZOMBIE;
     return -1;
   }
-  
+
   int on = 1;
   int ret = setsockopt(l->fd_, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
   if(ret) {
@@ -158,23 +161,23 @@ static int activate_listener(listener_t* l)
     if(setsockopt(l->fd_, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)))
       log_printf(WARNING, "failed to set IPV6_V6ONLY socket option: %s", strerror(errno));
   }
-  
+
   ret = bind(l->fd_, (struct sockaddr *)&(l->local_end_.addr_), l->local_end_.len_);
   if(ret) {
     log_printf(ERROR, "Error on bind(): %s", strerror(errno));
     l->state_ = ZOMBIE;
     return -1;
   }
-  
+
   ret = listen(l->fd_, 0);
   if(ret) {
     log_printf(ERROR, "Error on listen(): %s", strerror(errno));
     l->state_ = ZOMBIE;
     return -1;
   }
-  
+
   l->state_ = ACTIVE;
-  
+
   char* ls = tcp_endpoint_to_string(l->local_end_);
   char* rs = tcp_endpoint_to_string(l->remote_end_);
   char* ss = tcp_endpoint_to_string(l->source_end_);
@@ -186,27 +189,42 @@ static int activate_listener(listener_t* l)
   return 0;
 }
 
-int listeners_activate(listeners_t* list)
+static void update_listener(listener_t* dest, listener_t* src)
 {
-  if(!list)
+  if(!dest || !src || src->state_ != ZOMBIE || dest->state_ != NEW)
     return;
-  
-  int ret = 0;
-  slist_element_t* tmp = list->first_;
-  while(tmp) {
-    listener_t* l = (listener_t*)tmp->data_;
-    if(l && l->state_ == NEW)
-      ret = activate_listener(l);
 
-    if(ret)
-      break;
-    tmp = tmp->next_;
-  }
+  dest->fd_ = src->fd_;
+  src->fd_ = -1;
+  dest->state_ = ACTIVE;
 
-  return ret;
+  char* ls = tcp_endpoint_to_string(dest->local_end_);
+  char* rs = tcp_endpoint_to_string(dest->remote_end_);
+  char* ss = tcp_endpoint_to_string(dest->source_end_);
+  log_printf(NOTICE, "reusing %s with remote: %s%s%s", ls ? ls:"(null)", rs ? rs:"(null)", ss ? " and source " : "", ss ? ss : "");
+  if(ls) free(ls);
+  if(rs) free(rs);
+  if(ss) free(ss);
 }
 
-void listeners_cleanup(listeners_t* list)
+static listener_t* find_zombie_listener(listeners_t* list, tcp_endpoint_t* local_end)
+{
+  if(!list)
+    return NULL;
+
+  slist_element_t* tmp = list->first_;
+  while(tmp) {
+    listener_t* l = (listener_t*)tmp->data_;
+    if(l && l->state_ == ZOMBIE && l->local_end_.len_ == local_end->len_ && 
+       !memcmp(&(l->local_end_.addr_), &(local_end->addr_), local_end->len_))
+      return l;
+    tmp = tmp->next_;
+  }
+
+  return NULL;
+}
+
+int listeners_update(listeners_t* list)
 {
   if(!list)
     return;
@@ -214,10 +232,59 @@ void listeners_cleanup(listeners_t* list)
   slist_element_t* tmp = list->first_;
   while(tmp) {
     listener_t* l = (listener_t*)tmp->data_;
+    if(l && l->state_ == ACTIVE)
+      l->state_ = ZOMBIE;
     tmp = tmp->next_;
-    if(l && l->state_ == ZOMBIE)
-      slist_remove(list, l);
   }
+
+  int retval = 0;
+  tmp = list->first_;
+  while(tmp) {
+    listener_t* l = (listener_t*)tmp->data_;
+    int ret = 0;
+    if(l && l->state_ == NEW) {
+      listener_t* tmp = find_zombie_listener(list, &(l->local_end_));
+      if(tmp)
+        update_listener(l, tmp);
+      else
+        ret = activate_listener(l);
+    }
+    if(!retval) retval = ret;
+    tmp = tmp->next_;
+  }
+
+  int cnt = 0;
+  tmp = list->first_;
+  while(tmp) {
+    listener_t* l = (listener_t*)tmp->data_;
+    tmp = tmp->next_;
+    if(l && l->state_ == ZOMBIE) {
+      cnt++;
+      slist_remove(list, l);
+    }
+  }
+  log_printf(DEBUG, "%d listener zombies removed", cnt);
+
+  return retval;
+}
+
+void listeners_revert(listeners_t* list)
+{
+  if(!list)
+    return;
+
+  int cnt = 0;
+  slist_element_t* tmp = list->first_;
+  while(tmp) {
+    listener_t* l = (listener_t*)tmp->data_;
+    tmp = tmp->next_;
+    if(l && l->state_ == NEW) {
+      cnt++;
+      slist_remove(list, l);
+    }
+  }
+
+  log_printf(DEBUG, "%d new listeners reverted", cnt);
 }
 
 void listeners_remove(listeners_t* list, int fd)
@@ -245,7 +312,7 @@ void listeners_print(listeners_t* list)
 {
   if(!list)
     return;
-  
+
   slist_element_t* tmp = list->first_;
   while(tmp) {
     listener_t* l = (listener_t*)tmp->data_;
@@ -309,6 +376,6 @@ int listeners_handle_accept(listeners_t* list, clients_t* clients, fd_set* set)
     }
     tmp = tmp->next_;
   }
-  
+
   return 0;
 }

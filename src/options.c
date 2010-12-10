@@ -234,6 +234,8 @@ void options_parse_post(options_t* opt)
 
   if(opt->config_file_ && opt->local_port_) {
     log_printf(WARNING, "local port and config file specified, will ignore config file");
+    free(opt->config_file_);
+    opt->config_file_ = NULL;
   }
 
   if(opt->buffer_size_ <= 0) {
