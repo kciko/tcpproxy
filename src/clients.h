@@ -35,10 +35,14 @@
 
 #define BUFFER_LENGTH 10240
 
+enum client_state_enum { CONNECTING, CONNECTED };
+typedef enum client_state_enum client_state_t;
+
 typedef struct {
   int fd_[2];
   buffer_t write_buf_[2];
   u_int32_t write_buf_offset_[2];
+  client_state_t state_;
 } client_t;
 
 void clients_delete_element(void* e);
