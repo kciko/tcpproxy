@@ -33,7 +33,7 @@
 #include "slist.h"
 #include "tcp.h"
 
-#define BUFFER_LENGTH 10240
+#define BUFFER_LENGTH 102400
 
 enum client_state_enum { CONNECTING, CONNECTED };
 typedef enum client_state_enum client_state_t;
