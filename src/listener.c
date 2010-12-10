@@ -162,9 +162,11 @@ static int activate_listener(listener_t* l)
       log_printf(WARNING, "failed to set IPV6_V6ONLY socket option: %s", strerror(errno));
   }
 
+  char* ls = tcp_endpoint_to_string(l->local_end_);
   ret = bind(l->fd_, (struct sockaddr *)&(l->local_end_.addr_), l->local_end_.len_);
   if(ret) {
-    log_printf(ERROR, "Error on bind(): %s", strerror(errno));
+    log_printf(ERROR, "Error on bind(%s): %s", ls ? ls:"", strerror(errno));
+    if(ls) free(ls);
     l->state_ = ZOMBIE;
     return -1;
   }
@@ -172,13 +174,13 @@ static int activate_listener(listener_t* l)
   ret = listen(l->fd_, 0);
   if(ret) {
     log_printf(ERROR, "Error on listen(): %s", strerror(errno));
+    if(ls) free(ls);
     l->state_ = ZOMBIE;
     return -1;
   }
 
   l->state_ = ACTIVE;
 
-  char* ls = tcp_endpoint_to_string(l->local_end_);
   char* rs = tcp_endpoint_to_string(l->remote_end_);
   char* ss = tcp_endpoint_to_string(l->source_end_);
   log_printf(NOTICE, "listening on: %s (remote: %s%s%s)", ls ? ls:"(null)", rs ? rs:"(null)", ss ? " with source " : "", ss ? ss : "");
