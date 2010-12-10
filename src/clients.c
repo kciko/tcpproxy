@@ -36,6 +36,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 #include "clients.h"
 #include "tcp.h"
@@ -107,6 +108,18 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
     free(element->write_buf_[0].buf_);
     free(element->write_buf_[1].buf_);
     close(element->fd_[0]);
+    free(element);
+    return -1;
+  }
+
+  int on = 1;
+  if(setsockopt(element->fd_[0], IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) || 
+     setsockopt(element->fd_[1], IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on))) {
+    log_printf(ERROR, "Error on setsockopt(): %s", strerror(errno));
+    free(element->write_buf_[0].buf_);
+    free(element->write_buf_[1].buf_);
+    close(element->fd_[0]);
+    close(element->fd_[1]);
     free(element);
     return -1;
   }
