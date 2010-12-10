@@ -1,8 +1,11 @@
 201?.??.?? -- Version ?
 
-* ??
-		 
+* added TCP_NODELAY option for client fd's
+* using async connects now
+* re-reading config file after sig-hup
+* replaced flex/bison by ragel based parser
+
 2010.12.05 -- Version 0.1
 
 * initial release
-		 
+
