@@ -71,7 +71,6 @@ void clients_clear(clients_t* list)
 
 int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const tcp_endpoint_t source_end)
 {
-
   if(!list)
     return -1;
 
@@ -82,31 +81,9 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
   }
 
   element->fd_[0] = fd;
-
-  element->write_buf_[0].buf_ = malloc(list->buffer_size_);
-  if(!element->write_buf_[0].buf_) {
-    free(element);
-    close(fd);
-    return -2;
-  }
-  element->write_buf_[0].length_ = list->buffer_size_;
-  element->write_buf_offset_[0] = 0;
-
-  element->write_buf_[1].buf_ = malloc(list->buffer_size_);
-  if(!element->write_buf_[1].buf_) {
-    free(element->write_buf_[0].buf_);
-    free(element);
-    close(fd);
-    return -2;
-  }
-  element->write_buf_[1].length_ = list->buffer_size_;
-  element->write_buf_offset_[1] = 0;
-
   element->fd_[1] = socket(remote_end.addr_.ss_family, SOCK_STREAM, 0);
   if(element->fd_[1] < 0) { 
     log_printf(INFO, "Error on socket(): %s, not adding client %d", strerror(errno), element->fd_[0]);
-    free(element->write_buf_[0].buf_);
-    free(element->write_buf_[1].buf_);
     close(element->fd_[0]);
     free(element);
     return -1;
@@ -116,8 +93,6 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
   if(setsockopt(element->fd_[0], IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on)) || 
      setsockopt(element->fd_[1], IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on))) {
     log_printf(ERROR, "Error on setsockopt(): %s", strerror(errno));
-    free(element->write_buf_[0].buf_);
-    free(element->write_buf_[1].buf_);
     close(element->fd_[0]);
     close(element->fd_[1]);
     free(element);
@@ -127,8 +102,6 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
   if(source_end.addr_.ss_family != AF_UNSPEC) {
     if(bind(element->fd_[1], (struct sockaddr *)&(source_end.addr_), source_end.len_)==-1) { 
       log_printf(INFO, "Error on bind(): %s, not adding client %d", strerror(errno), element->fd_[0]);
-      free(element->write_buf_[0].buf_);
-      free(element->write_buf_[1].buf_);
       close(element->fd_[0]);
       close(element->fd_[1]);
       free(element);
@@ -138,13 +111,32 @@ int clients_add(clients_t* list, int fd, const tcp_endpoint_t remote_end, const 
 
   if(connect(element->fd_[1], (struct sockaddr *)&(remote_end.addr_), remote_end.len_)==-1) { 
     log_printf(INFO, "Error on connect(): %s, not adding client %d", strerror(errno), element->fd_[0]);
-    free(element->write_buf_[0].buf_);
-    free(element->write_buf_[1].buf_);
     close(element->fd_[0]);
     close(element->fd_[1]);
     free(element);
     return -1;
   }
+
+  element->write_buf_[0].buf_ = malloc(list->buffer_size_);
+  if(!element->write_buf_[0].buf_) {
+    close(element->fd_[0]);
+    close(element->fd_[1]);
+    free(element);
+    return -2;
+  }
+  element->write_buf_[0].length_ = list->buffer_size_;
+  element->write_buf_offset_[0] = 0;
+
+  element->write_buf_[1].buf_ = malloc(list->buffer_size_);
+  if(!element->write_buf_[1].buf_) {
+    free(element->write_buf_[0].buf_);
+    close(element->fd_[0]);
+    close(element->fd_[1]);
+    free(element);
+    return -2;
+  }
+  element->write_buf_[1].length_ = list->buffer_size_;
+  element->write_buf_offset_[1] = 0;
 
   if(slist_add(&(list->list_), element) == NULL) {
     free(element->write_buf_[0].buf_);
