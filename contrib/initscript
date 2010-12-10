@@ -35,7 +35,12 @@ case "$1" in
     start-stop-daemon --stop --quiet --pidfile $PIDFILE --exec $DAEMON && echo -n " $NAME"
     echo "."
     ;;
-  reload|force-reload|restart)
+  reload|force-reload)
+    echo -n "Reloading configuration of $DESC:"
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE --signal 1 --exec $DAEMON && echo -n " $NAME"
+    echo "."
+    ;;
+  restart)
     echo -n "Stopping $DESC"
     start-stop-daemon --stop --quiet --pidfile $PIDFILE --exec $DAEMON && echo -n " $NAME"
     echo "."
