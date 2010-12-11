@@ -51,6 +51,12 @@ all: $(EXECUTABLE)
 cfg_parser.c: cfg_parser.rl
 	$(RAGEL) -C -G2 -o $@ $<
 
+cfg_parser.dot: cfg_parser.rl
+	$(RAGEL) -V -p -o $@ $<
+
+cfg_parser.png: cfg_parser.dot
+	@dot -Tpng $< > $@
+
 %.d: %.c
 	@set -e; rm -f $@; \
   $(CC) -MM $(CFLAGS) $< > $@.$$$$; \
@@ -82,6 +88,7 @@ clean:
 	rm -f *.d
 	rm -f *.d.*
 	rm -f cfg_parser.c
+	rm -f cfg_parser.png cfg_parser.dot
 	rm -f $(EXECUTABLE)
 
 cleanall: clean
