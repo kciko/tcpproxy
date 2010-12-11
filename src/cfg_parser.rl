@@ -215,7 +215,7 @@ int read_configfile(const char* filename, listeners_t* listener)
   }
   close(fd);
 
-  log_printf(DEBUG, "mapped %ld bytes from file %s", sb.st_size, filename);
+  log_printf(DEBUG, "mapped %ld bytes from file %s at address 0x%08lX", sb.st_size, filename, p);
   int ret = parse_listener(p, p + sb.st_size, listener);
 
   if(munmap(p, sb.st_size) == -1) {
