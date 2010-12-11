@@ -110,6 +110,14 @@ static int owrt_string(char** dest, char* start, char* end)
     ret = listeners_add(listener, lst.la_, lst.lrt_, lst.lp_, lst.ra_, lst.rrt_, lst.rp_, lst.sa_);
     clear_listener_struct(&lst);
   }
+  action logerror {
+    if(fpc == eof)
+      log_printf(ERROR, "config file syntax error: unexpected end of file");
+    else
+      log_printf(ERROR, "config file syntax error at line %d", cur_line);
+
+    fgoto *cfg_parser_error;
+  }
 
   newline = '\n' @{cur_line++;};
   ws = [ \t];
@@ -145,7 +153,7 @@ static int owrt_string(char** dest, char* start, char* end)
   listen_head = 'listen' ws+ local_addr ws+ local_port;
   listen_body = '{' ( ign+ | resolv | remote | remote_resolv | source )* '};' @add_listener;
 
-  main := ( listen_head ign* listen_body | ign+ )*;
+  main := ( listen_head ign* listen_body | ign+ )* $!logerror;
 }%%
 
 
@@ -159,22 +167,17 @@ int parse_listener(char* p, char* pe, listeners_t* listener)
   char* cpy_start = NULL;
   struct listener lst;
   init_listener_struct(&lst);
-  
+
   char* eof = pe;
   %% write exec;
-  
+
   if(cs == cfg_parser_error) {
-    log_printf(ERROR, "config file syntax error at line %d", cur_line);
     listeners_revert(listener);
     ret = 1;
-  } else if(cs != cfg_parser_first_final) {
-        // we only have one file so if we aren't there something is wrong
-    log_printf(ERROR, "config file syntax error: unexpected end of file");
-    listeners_revert(listener);
-    ret = 1;
-  } else
+  }
+  else
     ret = listeners_update(listener);
-  
+
   clear_listener_struct(&lst);
 
   return ret;
