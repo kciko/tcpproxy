@@ -1,4 +1,4 @@
-201?.??.?? -- Version ?
+2010.12.11 -- Version 0.2
 
 * added TCP_NODELAY option for client fd's
 * using async connects now
