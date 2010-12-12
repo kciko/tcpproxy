@@ -86,9 +86,13 @@ static int owrt_string(char** dest, char* start, char* end)
     return -1;
 
   if(*dest) free(*dest);
-  *dest = strndup(start, end - start);
+  int n = end - start;
+  *dest = malloc(n+1);
   if(!(*dest))
     return -2;
+
+  memcpy(*dest, start, n);
+  (*dest)[n] = 0;
 
   return 0;
 }
