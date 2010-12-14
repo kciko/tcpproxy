@@ -211,7 +211,7 @@ void clients_print(clients_t* list)
     client_t* c = (client_t*)tmp->data_;
     if(c) {
           // TODO: print useful info
-      printf("client %d <-> %d: tba...\n", c->fd_[0], c->fd_[1]);
+      log_printf(NOTICE, "client #%d/%d: tba...", c->fd_[0], c->fd_[1]);
     }
     tmp = tmp->next_;
   }

@@ -81,6 +81,10 @@ int main_loop(options_t* opt, listeners_t* listeners)
           log_printf(NOTICE, "ignoring SIGHUP: no config file specified");
 
         return_value = 0;
+      } else if(return_value == 3) {
+        listeners_print(listeners);
+      } else if(return_value == 4) {
+        clients_print(&clients);
       }
     }
 

@@ -328,7 +328,7 @@ void listeners_print(listeners_t* list)
       case ACTIVE: state = 'a'; break;
       case ZOMBIE: state = 'z'; break;
       }
-      printf("listener [%c] #%d: %s -> %s%s%s\n", state, l->fd_, ls ? ls : "(null)", rs ? rs : "(null)", ss ? " with source " : "", ss ? ss : "");
+      log_printf(NOTICE, "[%c] listener #%d: %s -> %s%s%s", state, l->fd_, ls ? ls : "(null)", rs ? rs : "(null)", ss ? " with source " : "", ss ? ss : "");
       if(ls) free(ls);
       if(rs) free(rs);
       if(ss) free(ss);
