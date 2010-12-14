@@ -1,22 +1,13 @@
 '\" t
 .\"     Title: tcpproxy
 .\"    Author: [see the "AUTHORS" section]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 12/05/2010
-.\"    Manual: \ \&
-.\"    Source: \ \&
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 12/14/2010
+.\"    Manual: tcpproxy user manual
+.\"    Source: tcpproxy trunk
 .\"  Language: English
 .\"
-.TH "TCPPROXY" "8" "12/05/2010" "\ \&" "\ \&"
-.\" -----------------------------------------------------------------
-.\" * Define some portability stuff
-.\" -----------------------------------------------------------------
-.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.\" http://bugs.debian.org/507673
-.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
-.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.ie \n(.g .ds Aq \(aq
-.el       .ds Aq '
+.TH "TCPPROXY" "8" "12/14/2010" "tcpproxy trunk" "tcpproxy user manual"
 .\" -----------------------------------------------------------------
 .\" * set default formatting
 .\" -----------------------------------------------------------------
@@ -91,9 +82,9 @@ to write it\(cqs pid to this file\&. The default is to not create a pid file\&.
 .PP
 \fB\-L, \-\-log <target>:<level>[,<param1>[,<param2>[\&.\&.]]]\fR
 .RS 4
-add log target to logging system\&. This can be invoked several times in order to log to different targets at the same time\&. Every target hast its own log level which is a number between 0 and 5\&. Where 0 means disabling log and 5 means debug messages are enabled\&.
+add log target to logging system\&. This can be invoked several times in order to log to different targets at the same time\&. Every target has its own log level which is a number between 0 and 5\&. Where 0 means disabling log and 5 means debug messages are enabled\&.
 
-The file target can be used more the once with different levels\&. If no target is provided at the command line a single target with the config
+The file target can be used more than once with different levels\&. If no target is provided at the command line a single target with the config
 \fBsyslog:3,tcpproxy,daemon\fR
 is added\&.
 
@@ -205,6 +196,9 @@ listen (*|address|hostname) (port\-number|service\-name)
 .\}
 .sp
 Everything between the curly brackets except for the \fBremote\fR parameter may be omitted\&.
+.SH "SIGNALS"
+.sp
+After receiving the HUP signal \fBtcpproxy\fR tries to reload the configuration file\&. It only reopens a listen socket if the local address and or port has changed\&. Therefore reloading the configuration after the daemon has dropped privileges is safe as long as there are no changes in the local address and port\&. However this is only of concern if any of the listen ports is a privileged port (<1024)\&. If there is a syntax error at the configuration file all changes are discarded\&. On SIGUSR1 \fBtcpproxy\fR prints some information about the listening sockets and after SIGUSR2 information about open client connections is printed\&. This is sent to all configured log targets at a level of 3\&.
 .SH "BUGS"
 .sp
 Most likely there are some bugs in \fBtcpproxy\fR\&. If you find a bug, please let the developers know at tcpproxy@spreadspace\&.org\&. Of course, patches are preferred\&.

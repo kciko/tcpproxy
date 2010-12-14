@@ -68,9 +68,9 @@ The following options can be passed to the *tcpproxy* daemon:
 *-L, --log <target>:<level>[,<param1>[,<param2>[..]]]*::
    add log target to logging system. This can be invoked several times
    in order to log to different targets at the same time. Every target 
-   hast its own log level which is a number between 0 and 5. Where 0 means
+   has its own log level which is a number between 0 and 5. Where 0 means
    disabling log and 5 means debug messages are enabled. +
-   The file target can be used more the once with different levels.
+   The file target can be used more than once with different levels.
    If no target is provided at the command line a single target with the 
    config *syslog:3,tcpproxy,daemon* is added. +
    The following targets are supported:
@@ -140,6 +140,20 @@ listen (*|address|hostname) (port-number|service-name)
 ....
 
 Everything between the curly brackets except for the *remote* parameter may be omitted.
+
+
+SIGNALS
+-------
+
+After receiving the HUP signal *tcpproxy* tries to reload the configuration file. It only
+reopens a listen socket if the local address and or port has changed. Therefore reloading the
+configuration after the daemon has dropped privileges is safe as long as there are no changes
+in the local address and port. However this is only of concern if any of the listen ports is 
+a privileged port (<1024). If there is a syntax error at the configuration file all changes
+are discarded.
+On SIGUSR1 *tcpproxy* prints some information about the listening sockets and after SIGUSR2
+information about open client connections is printed. This is sent to all configured log 
+targets at a level of 3. 
 
 
 BUGS
