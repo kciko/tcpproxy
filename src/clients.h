@@ -43,6 +43,7 @@ typedef struct {
   buffer_t write_buf_[2];
   u_int32_t write_buf_offset_[2];
   client_state_t state_;
+  u_int64_t transferred_[2];
 } client_t;
 
 void clients_delete_element(void* e);

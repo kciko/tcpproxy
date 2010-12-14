@@ -92,6 +92,7 @@ static int handle_connect(client_t* c, int32_t buffer_size_)
     if(!c->write_buf_[i].buf_) return -2;
     c->write_buf_[i].length_ = buffer_size_;
     c->write_buf_offset_[i] = 0;
+    c->transferred_[i] = 0;
   }
 
   log_printf(INFO, "successfully added client %d", c->fd_[0]);
@@ -210,8 +211,12 @@ void clients_print(clients_t* list)
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c) {
-          // TODO: print useful info
-      log_printf(NOTICE, "client #%d/%d: tba...", c->fd_[0], c->fd_[1]);
+      char state = '?';
+      switch(c->state_) {
+      case CONNECTING: state = '>'; break;
+      case CONNECTED: state = 'c'; break;
+      }
+      log_printf(NOTICE, "[%c] client #%d/%d: %lld bytes received, %lld bytes sent", state, c->fd_[0], c->fd_[1], c->transferred_[0], c->transferred_[1]);
     }
     tmp = tmp->next_;
   }
@@ -323,6 +328,7 @@ int clients_write(clients_t* list, fd_set* set)
             break;
           }
           else {
+            c->transferred_[i] += len;
             if(c->write_buf_offset_[i] > len) {
               memmove(c->write_buf_[i].buf_, &c->write_buf_[i].buf_[len], c->write_buf_offset_[i] - len);
               c->write_buf_offset_[i] -= len;
