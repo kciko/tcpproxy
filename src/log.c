@@ -1,14 +1,14 @@
 /*
  *  tcpproxy
  *
- *  tcpproxy is a simple tcp connection proxy which combines the 
- *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and 
- *  IPv6 and also supports connections from IPv6 to IPv4 
+ *  tcpproxy is a simple tcp connection proxy which combines the
+ *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and
+ *  IPv6 and also supports connections from IPv6 to IPv4
  *  endpoints and vice versa.
- *  
  *
- *  Copyright (C) 2010-2011 Christian Pointner <equinox@spreadspace.org>
- *                         
+ *
+ *  Copyright (C) 2010-2013 Christian Pointner <equinox@spreadspace.org>
+ *
  *  This file is part of tcpproxy.
  *
  *  tcpproxy is free software: you can redistribute it and/or modify
@@ -77,7 +77,7 @@ int log_targets_target_exists(log_targets_t* targets, log_target_type_t type)
     if(tmp->type_ == type)
       return 1;
     tmp = tmp->next_;
-  }  
+  }
   return 0;
 }
 
@@ -140,7 +140,7 @@ int log_targets_add(log_targets_t* targets, const char* conf)
     log_target_t* tmp = targets->first_;
     while(tmp->next_)
       tmp = tmp->next_;
-    
+
     tmp->next_ = new_target;
   }
   return 0;

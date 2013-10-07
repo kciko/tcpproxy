@@ -1,14 +1,14 @@
 /*
  *  tcpproxy
  *
- *  tcpproxy is a simple tcp connection proxy which combines the 
- *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and 
- *  IPv6 and also supports connections from IPv6 to IPv4 
+ *  tcpproxy is a simple tcp connection proxy which combines the
+ *  features of rinetd and 6tunnel. tcpproxy supports IPv4 and
+ *  IPv6 and also supports connections from IPv6 to IPv4
  *  endpoints and vice versa.
- *  
  *
- *  Copyright (C) 2010-2011 Christian Pointner <equinox@spreadspace.org>
- *                         
+ *
+ *  Copyright (C) 2010-2013 Christian Pointner <equinox@spreadspace.org>
+ *
  *  This file is part of tcpproxy.
  *
  *  tcpproxy is free software: you can redistribute it and/or modify
@@ -36,10 +36,10 @@ slist_element_t* slist_get_last(slist_element_t* first)
 {
   if(!first)
     return NULL;
-  
+
   while(first->next_)
     first = first->next_;
-  
+
   return first;
 }
 
@@ -62,7 +62,7 @@ slist_element_t* slist_add(slist_t* lst, void* data)
   slist_element_t* new_element = malloc(sizeof(slist_element_t));
   if(!new_element)
     return NULL;
-  
+
   new_element->data_ = data;
   new_element->next_ = NULL;
 
@@ -70,7 +70,7 @@ slist_element_t* slist_add(slist_t* lst, void* data)
     lst->first_ = new_element;
   else
     slist_get_last(lst->first_)->next_ = new_element;
-  
+
   return new_element;
 }
 
@@ -104,7 +104,7 @@ void slist_clear(slist_t* lst)
 {
   if(!lst || !lst->first_)
     return;
-  
+
   do {
     slist_element_t* deletee = lst->first_;
     lst->first_ = lst->first_->next_;
@@ -112,7 +112,7 @@ void slist_clear(slist_t* lst)
     free(deletee);
   }
   while(lst->first_);
-  
+
   lst->first_ = NULL;
 }
 
@@ -120,11 +120,11 @@ int slist_length(slist_t* lst)
 {
   if(!lst || !lst->first_)
     return 0;
-  
+
   int len = 0;
   slist_element_t* tmp;
   for(tmp = lst->first_; tmp; tmp = tmp->next_)
     len++;
-  
+
   return len;
 }
