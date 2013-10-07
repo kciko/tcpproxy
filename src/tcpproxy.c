@@ -34,6 +34,7 @@
 #include "datatypes.h"
 #include "options.h"
 #include "string_list.h"
+#include "sig_handler.h"
 #include "log.h"
 #include "daemon.h"
 

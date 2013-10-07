@@ -25,6 +25,7 @@
  *  along with tcpproxy. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +41,6 @@
 
 char* tcp_endpoint_to_string(tcp_endpoint_t e)
 {
-  size_t addrstr_len = 0;
   char addrstr[INET6_ADDRSTRLEN + 1], portstr[6], *ret;
   char addrport_sep = ':';
   
@@ -49,12 +49,13 @@ char* tcp_endpoint_to_string(tcp_endpoint_t e)
   case AF_INET: addrport_sep = ':'; break;
   case AF_INET6: addrport_sep = '.'; break;
   case AF_UNSPEC: return NULL;
-  default: asprintf(&ret, "unknown address type"); return ret;
+  default: return strdup("unknown address type"); 
   }
 
   int errcode  = getnameinfo((struct sockaddr *)&(e.addr_), e.len_, addrstr, sizeof(addrstr), portstr, sizeof(portstr), NI_NUMERICHOST | NI_NUMERICSERV);
   if (errcode != 0) return NULL;
-  asprintf(&ret, "%s%c%s", addrstr, addrport_sep ,portstr);
+  int len = asprintf(&ret, "%s%c%s", addrstr, addrport_sep, portstr);
+  if(len == -1) return NULL;
   return ret;
 }
 

@@ -217,7 +217,7 @@ static listener_t* find_zombie_listener(listeners_t* list, tcp_endpoint_t* local
   slist_element_t* tmp = list->first_;
   while(tmp) {
     listener_t* l = (listener_t*)tmp->data_;
-    if(l && l->state_ == ZOMBIE && l->local_end_.len_ == local_end->len_ && 
+    if(l && l->state_ == ZOMBIE && l->local_end_.len_ == local_end->len_ &&
        !memcmp(&(l->local_end_.addr_), &(local_end->addr_), local_end->len_))
       return l;
     tmp = tmp->next_;
@@ -229,7 +229,7 @@ static listener_t* find_zombie_listener(listeners_t* list, tcp_endpoint_t* local
 int listeners_update(listeners_t* list)
 {
   if(!list)
-    return;
+    return 0;
 
   slist_element_t* tmp = list->first_;
   while(tmp) {

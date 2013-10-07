@@ -52,7 +52,7 @@ int priv_init(priv_info_t* priv, const char* username, const char* groupname)
 
   priv->pw_ = getpwnam(username);
   if(!priv->pw_) {
-    log_printf(ERROR, "unkown user %s", username);
+    log_printf(ERROR, "unknown user %s", username);
     return -1;
   }
 
@@ -62,7 +62,7 @@ int priv_init(priv_info_t* priv, const char* username, const char* groupname)
     priv->gr_ = getgrgid(priv->pw_->pw_gid);
 
   if(!priv->gr_) {
-    log_printf(ERROR, "unkown group %s", groupname);
+    log_printf(ERROR, "unknown group %s", groupname);
     return -1;
   }
 
@@ -114,6 +114,8 @@ int do_chroot(const char* chrootdir)
     log_printf(ERROR, "can't change to /: %s", strerror(errno));
     return -1;
   }
+
+  return 0;
 }
 
 void daemonize()

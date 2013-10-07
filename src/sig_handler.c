@@ -28,13 +28,13 @@
 #include "datatypes.h"
 
 #include "log.h"
-
 #include "sig_handler.h"
-#include <errno.h>
 
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 static int sig_pipe_fds[2];
 

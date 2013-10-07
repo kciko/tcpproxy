@@ -76,7 +76,7 @@ static int handle_connect(client_t* c, int32_t buffer_size_)
     return -1;
 
   int error = 0;
-  int len = sizeof(error);
+  socklen_t len = sizeof(error);
   if(getsockopt(c->fd_[1], SOL_SOCKET, SO_ERROR, &error, &len)==-1) {
     log_printf(ERROR, "Error on getsockopt(): %s", strerror(errno));
     return -1;
