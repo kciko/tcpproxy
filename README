@@ -26,7 +26,7 @@ Installation
 Getting the source via subversion:
 ----------------------------------
 
-svn co https://svn.spreadspace.org/tcpproxy/trunk tcpproxy
+git clone git://git.spreadspace.org/tcpproxy.git
 cd tcpproxy
 
 
