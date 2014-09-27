@@ -325,7 +325,13 @@ void options_print_usage()
 void options_print_version()
 {
   printf("%s\n", VERSION_STRING_0);
+#if defined(__clang__)
+  printf("%s, using CLANG %s\n", VERSION_STRING_1, __clang_version__);
+#elif defined(__GNUC__)
+  printf("%s, using GCC %d.%d.%d\n", VERSION_STRING_1, __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#else
   printf("%s\n", VERSION_STRING_1);
+#endif
 }
 
 void options_print(options_t* opt)
