@@ -158,7 +158,7 @@ STRIP := strip
 INSTALL := install
 RAGEL := ragel
 
-PREFIX := '$PREFIX'
+prefix := '$PREFIX'
 BINDIR := '$BINDIR'
 ETCDIR := '$ETCDIR'
 EOF
