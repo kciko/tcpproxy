@@ -1,3 +1,8 @@
+2015.??.?? -- Version 1.2
+
+* added support for systemd
+* fixed exit code after signal
+
 2013.10.07 -- Version 1.1
 
 * fixed build for clang

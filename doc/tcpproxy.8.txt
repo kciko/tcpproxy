@@ -182,7 +182,7 @@ Main web site: http://www.spreadspace.org/tcpproxy/
 COPYING
 -------
 
-Copyright \(C) 2010-2013 Christian Pointner. This  program is  free
+Copyright \(C) 2010-2015 Christian Pointner. This  program is  free
 software: you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or any later version.

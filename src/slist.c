@@ -7,7 +7,7 @@
  *  endpoints and vice versa.
  *
  *
- *  Copyright (C) 2010-2013 Christian Pointner <equinox@spreadspace.org>
+ *  Copyright (C) 2010-2015 Christian Pointner <equinox@spreadspace.org>
  *
  *  This file is part of tcpproxy.
  *
