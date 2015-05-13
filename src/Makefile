@@ -119,7 +119,7 @@ install-bin: $(EXECUTABLE)
 
 install-systemd:
 	$(INSTALL) -d $(DESTDIR)$(SYSTEMDDIR)
-	$(INSTALL) -m 755 ../contrib/systemd.service $(DESTDIR)$(SYSTEMDDIR)/$(EXECUTABLE).service
+	$(INSTALL) -m 644 ../contrib/systemd.service $(DESTDIR)$(SYSTEMDDIR)/$(EXECUTABLE).service
 
 install-etc:
 	$(INSTALL) -d $(DESTDIR)$(ETCDIR)/init.d/
