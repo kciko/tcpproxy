@@ -30,6 +30,9 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/select.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <signal.h>
 
 #include "datatypes.h"
 #include "options.h"
@@ -73,8 +76,8 @@ int main_loop(options_t* opt, listeners_t* listeners)
 
     if(FD_ISSET(sig_fd, &readfds)) {
       return_value = signal_handle();
-      if(return_value == 1) break;
-      if(return_value == 2) {
+      if(return_value == SIGINT || return_value == SIGQUIT || return_value == SIGTERM) break;
+      if(return_value == SIGHUP) {
         if(opt->config_file_) {
           log_printf(NOTICE, "re-reading config file: %s", opt->config_file_);
           read_configfile(opt->config_file_, listeners);
@@ -82,9 +85,9 @@ int main_loop(options_t* opt, listeners_t* listeners)
           log_printf(NOTICE, "ignoring SIGHUP: no config file specified");
 
         return_value = 0;
-      } else if(return_value == 3) {
+      } else if(return_value == SIGUSR1) {
         listeners_print(listeners);
-      } else if(return_value == 4) {
+      } else if(return_value == SIGUSR2) {
         clients_print(&clients);
       }
     }
@@ -233,8 +236,10 @@ int main(int argc, char* argv[])
     log_printf(NOTICE, "normal shutdown");
   else if(ret < 0)
     log_printf(NOTICE, "shutdown after error");
-  else
+  else {
     log_printf(NOTICE, "shutdown after signal");
+    kill(getpid(), ret);
+  }
 
   log_close();
 
