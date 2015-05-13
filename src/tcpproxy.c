@@ -238,6 +238,7 @@ int main(int argc, char* argv[])
     log_printf(NOTICE, "shutdown after error");
   else {
     log_printf(NOTICE, "shutdown after signal");
+    log_close();
     kill(getpid(), ret);
   }
 
