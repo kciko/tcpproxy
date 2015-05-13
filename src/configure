@@ -33,6 +33,7 @@ USE_CLANG=0
 
 PREFIX='/usr/local'
 BINDIR=''
+SYSTEMDDIR=''
 ETCDIR=''
 MANDIR=''
 INSTALLMANPAGE=1
@@ -44,6 +45,7 @@ print_usage() {
   echo "          --target=<TARGET>         build target i.e. Linux (default: autodetect)"
   echo "          --prefix=<PREFIX>         the installation prefix (default: /usr/local)"
   echo "          --bindir=<DIR>            the path to the bin directory (default: $PREFIX/bin)"
+  echo "          --systemddir=<DIR>        the path to the systemd service unit directory (default: /usr/lib/systemd/system)"
   echo "          --sysconfdir=<DIR>        the path to the system configuration directory (default: $PREFIX/etc"
   echo "          --mandir=<DIR>            the path to the system man pages (default: $PREFIX/share/man)"
   echo "          --no-manpage              dont't install manpage"
@@ -66,6 +68,9 @@ do
   ;;
   --bindir=*)
     BINDIR=${arg#--bindir=}
+  ;;
+  --systemddir=*)
+    SYSTEMDDIR=${arg#--systemddir=}
   ;;
   --sysconfdir=*)
     ETCDIR=${arg#--sysconfdir=}
@@ -133,6 +138,10 @@ if [ -z "$BINDIR" ]; then
   BINDIR=$PREFIX/bin
 fi
 
+if [ -z "$SYSTEMDDIR" ]; then
+  SYSTEMDDIR=/usr/lib/systemd/system
+fi
+
 if [ -z "$ETCDIR" ]; then
   ETCDIR=$PREFIX/etc
 fi
@@ -160,6 +169,7 @@ RAGEL := ragel
 
 prefix := '$PREFIX'
 BINDIR := '$BINDIR'
+SYSTEMDDIR := '$SYSTEMDDIR'
 ETCDIR := '$ETCDIR'
 EOF
 
@@ -206,6 +216,7 @@ cat > config.h <<EOF
 #define TARGET "$TARGET"
 #define PREFIX "$PREFIX"
 #define BINDIR "$BINDIR"
+#define SYSTEMDDIR "$SYSTEMDDIR"
 #define ETCDIR "$ETCDIR"
 #define CONFFILE "$ETCDIR/tcpproxy.conf"
 

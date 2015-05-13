@@ -98,8 +98,8 @@ manpage:
 	$(MAKE) --directory="../doc/" manpage
 
 
-INSTALL_TARGETS := install-bin install-etc
-REMOVE_TARGETS := remove-bin remove-etc
+INSTALL_TARGETS := install-bin install-systemd install-etc
+REMOVE_TARGETS := remove-bin remove-systemd remove-etc
 
 ifdef MANDIR
 INSTALL_TARGETS += install-man
@@ -116,6 +116,10 @@ install: all $(INSTALL_TARGETS)
 install-bin: $(EXECUTABLE)
 	$(INSTALL) -d $(DESTDIR)$(BINDIR)
 	$(INSTALL) -m 755 $(EXECUTABLE) $(DESTDIR)$(BINDIR)
+
+install-systemd:
+	$(INSTALL) -d $(DESTDIR)$(SYSTEMDDIR)
+	$(INSTALL) -m 755 ../contrib/systemd.service $(DESTDIR)$(SYSTEMDDIR)/$(EXECUTABLE).service
 
 install-etc:
 	$(INSTALL) -d $(DESTDIR)$(ETCDIR)/init.d/
@@ -139,6 +143,9 @@ remove: $(REMOVE_TARGETS)
 
 remove-bin:
 	rm -f $(DESTDIR)$(BINDIR)/$(EXECUTABLE)
+
+remove-systemd:
+	rm -f $(DESTDIR)$(SYSTEMDDIR)/$(EXECUTABLE).service
 
 remove-etc:
 	rm -f $(DESTDIR)$(ETCDIR)/init.d/$(EXECUTABLE)
