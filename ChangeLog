@@ -1,4 +1,4 @@
-2015.??.?? -- Version 1.2
+2015.05.14 -- Version 1.2
 
 * added support for systemd
 * fixed exit code after signal
