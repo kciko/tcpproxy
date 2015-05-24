@@ -35,11 +35,14 @@
 
 #define BUFFER_LENGTH 102400
 
-enum client_state_enum { CONNECTING, CONNECTED };
+enum client_state_enum { CONNECTING, CONNECTED, CLOSING };
 typedef enum client_state_enum client_state_t;
+enum client_fd_state_enum { ESTABLISHING, ESTABLISHED, FIN_PENDING, FIN_LINGER, CLOSE_PENDING, CLOSE_LINGER };
+typedef enum client_fd_state_enum client_fd_state_t;
 
 typedef struct {
   int fd_[2];
+  client_fd_state_t fd_state_[2];
   buffer_t write_buf_[2];
   u_int32_t write_buf_offset_[2];
   client_state_t state_;
