@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  char buf[123456];
+  char buf[1234567];
   unsigned int i;
   for(i = 0; i<sizeof(buf); ++i) {
     buf[i] = 'A' + i%62;

@@ -87,12 +87,14 @@ int main(int argc, char* argv[])
   printf("connection from %s:%d\n", addr_str, caddr.sin_port);
 
 
-  char buf[10 * 1024];
+  char buf[10000];
+  unsigned long int rtot = 0;
   for(;;) {
     int nbread = recv(c, buf, sizeof(buf), 0);
     if(nbread <= 0) {
       if(!nbread) {
         fprintf(stderr, "connection closed\n");
+        sleep(1);
         return 0;
       } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
         perror("recv()");
@@ -101,7 +103,8 @@ int main(int argc, char* argv[])
       continue;
     }
 
-    printf("%d bytes received\n", nbread);
+    rtot += nbread;
+    printf("%d bytes received, total = %ld\n", nbread, rtot);
 
     int len = 0;
     for(;;) {
