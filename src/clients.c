@@ -408,7 +408,6 @@ int clients_write(clients_t* list, fd_set* set)
       for(i=0; i<2; ++i) {
         if(FD_ISSET(c->fd_[i], set)) {
           log_printf(DEBUG, "calling send(%d)", c->fd_[i]);
-
           int len = send(c->fd_[i], c->write_buf_[i].buf_, c->write_buf_offset_[i], 0);
           if(len < 0) {
                 // TODO: the other socket might still have data pending....

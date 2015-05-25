@@ -1,3 +1,5 @@
+contrib/testserver
+contrib/testclient
 doc/tcpproxy.8.xml
 src/include.mk
 src/tcpproxy
