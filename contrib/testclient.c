@@ -104,8 +104,8 @@ int main(int argc, char* argv[])
       return -1;
     }
 
-    printf("%d bytes received", nbread);
     len += nbread;
+    printf("%d bytes received, total = %d, left = %d", nbread, len, len - nbwritten);
     if(len == nbwritten) {
       printf(" .. finished\n");
       for(i = 0; i<nbwritten-1; ++i) {
@@ -119,6 +119,9 @@ int main(int argc, char* argv[])
         return -1;
       }
       break;
+    } else if(len > nbwritten) {
+      fprintf(stderr, "got too many bytes back???\n");
+      return -1;
     }
 
     printf("\n");

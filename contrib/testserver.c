@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 
 
   char buf[10000];
-  unsigned long int rtot = 0;
+  int rtot = 0;
   for(;;) {
     int nbread = recv(c, buf, sizeof(buf), 0);
     if(nbread <= 0) {
@@ -104,7 +104,7 @@ int main(int argc, char* argv[])
     }
 
     rtot += nbread;
-    printf("%d bytes received, total = %ld\n", nbread, rtot);
+    printf("%d bytes received, total = %d\n", nbread, rtot);
 
     int len = 0;
     for(;;) {
