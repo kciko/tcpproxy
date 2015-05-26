@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -38,8 +39,8 @@
 
 int main(int argc, char* argv[])
 {
-  if(argc < 2) {
-    fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+  if(argc < 3) {
+    fprintf(stderr, "Usage: %s <port> (A|B)\n", argv[0]);
     return -1;
   }
 
@@ -72,6 +73,8 @@ int main(int argc, char* argv[])
     return -1;
   }
 
+  printf("MODE: %c, listening...\n", toupper(argv[2][0]));
+
   struct sockaddr_in caddr;
   socklen_t len = sizeof(struct sockaddr_in);
   int c = accept(s, (struct sockaddr*)(&caddr), &len);
@@ -87,41 +90,106 @@ int main(int argc, char* argv[])
   printf("connection from %s:%d\n", addr_str, caddr.sin_port);
 
 
-  char buf[10000];
-  int rtot = 0;
-  for(;;) {
-    int nbread = recv(c, buf, sizeof(buf), 0);
-    if(nbread <= 0) {
-      if(!nbread) {
-        fprintf(stderr, "connection closed\n");
-        sleep(1);
-        return 0;
-      } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-        perror("recv()");
-        return -1;
-      }
-      continue;
-    }
-
-    rtot += nbread;
-    printf("%d bytes received, total = %d\n", nbread, rtot);
-
-    int len = 0;
+  switch(toupper(argv[2][0])) {
+/*************** MODE A ***************/
+  case 'A': {
+    char buf[10000];
+    int rtot = 0;
     for(;;) {
-      int nbwritten = send(c, &(buf[len]), nbread - len, 0);
-      if(nbwritten <= 0) {
-        if(nbwritten < 0 && (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)) {
-          perror("send()");
+      int nbread = recv(c, buf, sizeof(buf), 0);
+      if(nbread <= 0) {
+        if(!nbread) {
+          fprintf(stderr, "connection closed\n");
+          sleep(1);
+          return 0;
+        } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+          perror("recv()");
           return -1;
         }
         continue;
       }
-      printf("%d bytes sent\n", nbwritten);
-      len += nbwritten;
-      if(len >= nbread) {
+
+      rtot += nbread;
+      printf("%d bytes received, total = %d\n", nbread, rtot);
+
+      int len = 0;
+      for(;;) {
+        int nbwritten = send(c, &(buf[len]), nbread - len, 0);
+        if(nbwritten <= 0) {
+          if(nbwritten < 0 && (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)) {
+            perror("send()");
+            return -1;
+          }
+          continue;
+        }
+        printf("%d bytes sent\n", nbwritten);
+        len += nbwritten;
+        if(len >= nbread) {
+          break;
+        }
+      }
+    }
+    break;
+  }
+/*************** MODE A ***************/
+  case 'B': {
+    char buf[1234567];
+    int rtot = 0;
+    for(;;) {
+      int nbread = recv(c, &(buf[rtot]), sizeof(buf) - rtot, 0);
+      if(nbread <= 0) {
+        if(!nbread) {
+          fprintf(stderr, "connection closed\n");
+          return 0;
+        } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+          perror("recv()");
+          return -1;
+        }
+        continue;
+      }
+
+      rtot += nbread;
+      printf("%d bytes received, total = %d\n", nbread, rtot);
+      unsigned char* end = memchr(buf, '\n', rtot);
+      if(!end) {
+        if(rtot >= sizeof(buf)) {
+          printf("Request too big...\n");
+          return -2;
+        }
+      } else {
+        *end = 0;
+        printf("Got Request: '%s'\n", buf);
         break;
       }
     }
+
+    unsigned int i;
+    for(i = 0; i<sizeof(buf); ++i) {
+      buf[i] = 'A' + i%62;
+    }
+    buf[sizeof(buf)-1] = '\n';
+
+    int wtot = 0;
+    for(;;) {
+      int nbwritten = send(c, &(buf[wtot]), sizeof(buf) - wtot, 0);
+      if(nbwritten <= 0) {
+        if(nbwritten < 0)
+          perror("send()");
+        else
+          fprintf(stderr, "nothing sent... aborting\n");
+        return -1;
+      }
+      wtot += nbwritten;
+      printf("%d bytes sent, total=%d\n", nbwritten, wtot);
+      if(wtot >= sizeof(buf)) {
+        break;
+      }
+    }
+    while(recv(c, buf, 1, 0) > 0);
+
+    break;
+  }
+/**************************************/
   }
 
   return 0;
