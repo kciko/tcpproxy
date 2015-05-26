@@ -37,7 +37,7 @@
 
 enum client_state_enum { CONNECTING, CONNECTED, CLOSING };
 typedef enum client_state_enum client_state_t;
-enum client_fd_state_enum { ESTABLISHING, ESTABLISHED, FIN_PENDING, FIN_LINGER, CLOSE_PENDING, CLOSE_LINGER };
+enum client_fd_state_enum { ESTABLISHING, ESTABLISHED, RCV_STOPPED, FIN_PENDING, FIN_LINGER, CLOSE_PENDING };
 typedef enum client_fd_state_enum client_fd_state_t;
 
 typedef struct {

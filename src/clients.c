@@ -226,6 +226,18 @@ void clients_print(clients_t* list)
   }
 }
 
+static char* client_fd_state_to_string(client_fd_state_t s)
+{
+  switch(s) {
+  case ESTABLISHING: return "establishing";
+  case ESTABLISHED: return "established";
+  case RCV_STOPPED: return "receiving stopped";
+  case FIN_PENDING: return "FIN pending";
+  case FIN_LINGER: return "FIN linger";
+  case CLOSE_PENDING: return "CLOSE pending";
+  }
+}
+
 void clients_read_fds(clients_t* list, fd_set* set, int* max_fd)
 {
   if(!list)
@@ -235,19 +247,20 @@ void clients_read_fds(clients_t* list, fd_set* set, int* max_fd)
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c && (c->state_ == CONNECTED || c->state_ == CLOSING)) {
-      if(c->fd_state_[0] != CLOSE_PENDING && c->fd_state_[0] != CLOSE_LINGER
-         && c->write_buf_offset_[1] < c->write_buf_[1].length_) {
-        FD_SET(c->fd_[0], set);
-        *max_fd = *max_fd > c->fd_[0] ? *max_fd : c->fd_[0];
-
-        log_printf(DEBUG, "adding %d for READ", c->fd_[0]);
-      }
-      if(c->fd_state_[1] != CLOSE_PENDING && c->fd_state_[1] != CLOSE_LINGER
-         && c->write_buf_offset_[0] < c->write_buf_[0].length_) {
-        FD_SET(c->fd_[1], set);
-        *max_fd = *max_fd > c->fd_[1] ? *max_fd : c->fd_[1];
-
-        log_printf(DEBUG, "adding %d for READ", c->fd_[1]);
+      int i;
+      for(i=0; i<2; ++i) {
+        if(c->write_buf_offset_[i^1] < c->write_buf_[i^1].length_) {
+          switch(c->fd_state_[i]) {
+          case ESTABLISHED:
+          case FIN_PENDING:
+          case FIN_LINGER: {
+            FD_SET(c->fd_[i], set);
+            *max_fd = *max_fd > c->fd_[i] ? *max_fd : c->fd_[i];
+            log_printf(DEBUG, "adding %d for READ", c->fd_[i]);
+          }
+          default: /* not adding fd */;
+          }
+        }
       }
     }
     tmp = tmp->next_;
@@ -263,19 +276,21 @@ void clients_write_fds(clients_t* list, fd_set* set, int* max_fd)
   while(tmp) {
     client_t* c = (client_t*)tmp->data_;
     if(c && (c->state_ == CONNECTED || c->state_ == CLOSING)) {
-      if((c->fd_state_[0] == ESTABLISHED || c->fd_state_[0] == CLOSE_PENDING || c->fd_state_[0] == FIN_PENDING)
-         && c->write_buf_offset_[0]) {
-        FD_SET(c->fd_[0], set);
-        *max_fd = *max_fd > c->fd_[0] ? *max_fd : c->fd_[0];
-
-        log_printf(DEBUG, "adding %d for WRITE", c->fd_[0]);
-      }
-      if((c->fd_state_[1] == ESTABLISHED || c->fd_state_[1] == CLOSE_PENDING || c->fd_state_[1] == FIN_PENDING)
-         && c->write_buf_offset_[1]) {
-        FD_SET(c->fd_[1], set);
-        *max_fd = *max_fd > c->fd_[1] ? *max_fd : c->fd_[1];
-
-        log_printf(DEBUG, "adding %d for WRITE", c->fd_[1]);
+      int i;
+      for(i=0; i<2; ++i) {
+        if(c->write_buf_offset_[i]) {
+          switch(c->fd_state_[i]) {
+          case ESTABLISHED:
+          case RCV_STOPPED:
+          case FIN_PENDING:
+          case CLOSE_PENDING: {
+            FD_SET(c->fd_[i], set);
+            *max_fd = *max_fd > c->fd_[i] ? *max_fd : c->fd_[i];
+            log_printf(DEBUG, "adding %d for WRITE", c->fd_[i]);
+          }
+          default: /* not adding fd */;
+          }
+        }
       }
     } else if(c && c->state_ == CONNECTING) {
       FD_SET(c->fd_[1], set);
@@ -287,29 +302,25 @@ void clients_write_fds(clients_t* list, fd_set* set, int* max_fd)
   }
 }
 
-static char* client_fd_state_to_string(client_fd_state_t s)
-{
-  switch(s) {
-  case ESTABLISHING: return "establishing";
-  case ESTABLISHED: return "established";
-  case FIN_PENDING: return "FIN pending";
-  case FIN_LINGER: return "FIN linger";
-  case CLOSE_PENDING: return "CLOSE pending";
-  case CLOSE_LINGER: return "CLOSE linger";
-  }
-}
-
-static int client_handle_close(client_t* c, int in, int out)
+static int client_handle_recv_null(client_t* c, int in, int out)
 {
   log_printf(DEBUG, "client %d: recv(%d) returned 0, %d: bytes=%d state=%s, %d: bytes=%d state=%s", c->fd_[0], c->fd_[in],
              c->fd_[0], c->write_buf_offset_[0], client_fd_state_to_string(c->fd_state_[0]),
              c->fd_[1], c->write_buf_offset_[1], client_fd_state_to_string(c->fd_state_[1]));
 
   c->state_ = CLOSING;
-  c->fd_state_[in] = (c->write_buf_offset_[in]) ? CLOSE_PENDING : CLOSE_LINGER;
+
+  switch(c->fd_state_[in]) {
+  case ESTABLISHING: log_printf(ERROR, "client %d: socket %d is in the ESTABLISHING state???", c->fd_[0], c->fd_[in]); return 1; // assert() this??
+  case ESTABLISHED: c->fd_state_[in] = RCV_STOPPED; break;
+  case RCV_STOPPED: log_printf(ERROR, "client %d: socket %d is already in RCV_STOPPED state???", c->fd_[0], c->fd_[in]); return 1; // assert() this??
+  case FIN_PENDING: /* do nothing */; break;
+  case FIN_LINGER: /* do nothing */; break;
+  case CLOSE_PENDING: log_printf(ERROR, "client %d: socket %d is already in CLOSE_PENDING state???", c->fd_[0], c->fd_[in]); break;
+  }
 
   switch(c->fd_state_[out]) {
-  case ESTABLISHING: return 1; // this will never be reached - remove client for now > assert() this in future??
+  case ESTABLISHING: log_printf(ERROR, "client %d: socket %d is in the ESTABLISHING state???", c->fd_[0], c->fd_[out]); return 1; // assert() this??
   case ESTABLISHED: {
     if(c->write_buf_offset_[out]) {
       c->fd_state_[out] = FIN_PENDING;
@@ -319,13 +330,43 @@ static int client_handle_close(client_t* c, int in, int out)
     }
     break;
   }
-  case FIN_PENDING: log_printf(ERROR, "client %d: socket %d is already in FIN_PENDING state???", c->fd_[0], c->fd_[out]); break;
-  case FIN_LINGER: log_printf(ERROR, "client %d: socket %d is already in FIN_LINGER state???", c->fd_[0], c->fd_[out]); break;
+  case RCV_STOPPED: {
+    if(c->write_buf_offset_[out]) {
+      c->fd_state_[out] = CLOSE_PENDING;
+    } else {
+      log_printf(INFO, "client %d: both connections are finished now - removing it", c->fd_[0]);
+      return 1;
+    }
+    break;
+  }
+  case FIN_PENDING: log_printf(ERROR, "client %d: socket %d is already in FIN_PENDING state???", c->fd_[0], c->fd_[out]); break; // assert() this??
+  case FIN_LINGER: log_printf(ERROR, "client %d: socket %d is already in FIN_LINGER state???", c->fd_[0], c->fd_[out]); break; // assert() this??
   case CLOSE_PENDING: log_printf(DEBUG, "client %d: socket %d has data pending - removal postponed", c->fd_[0], c->fd_[out]); break;
-  case CLOSE_LINGER: log_printf(INFO, "client %d: both connections are closed now - removing it", c->fd_[0]); return 1;
   }
 
-  log_printf(DEBUG, "client %d is now               %d: bytes=%d state=%s, %d: bytes=%d state=%s", c->fd_[0],
+  log_printf(DEBUG, "client %d state is now           %d: bytes=%d state=%s, %d: bytes=%d state=%s", c->fd_[0],
+             c->fd_[0], c->write_buf_offset_[0], client_fd_state_to_string(c->fd_state_[0]),
+             c->fd_[1], c->write_buf_offset_[1], client_fd_state_to_string(c->fd_state_[1]));
+
+  return 0;
+}
+
+static int client_handle_buffer_flushed(client_t* c, int i)
+{
+  log_printf(DEBUG, "client %d: cleared write buffer[%d], %d: bytes=%d state=%s, %d: bytes=%d state=%s", c->fd_[0], c->fd_[i],
+             c->fd_[0], c->write_buf_offset_[0], client_fd_state_to_string(c->fd_state_[0]),
+             c->fd_[1], c->write_buf_offset_[1], client_fd_state_to_string(c->fd_state_[1]));
+
+  switch(c->fd_state_[i]) {
+  case ESTABLISHING: log_printf(ERROR, "client %d: socket %d is in the ESTABLISHING state???", c->fd_[0], c->fd_[i]); return 1; // assert() this??
+  case ESTABLISHED:
+  case RCV_STOPPED: /*nothing here*/; break;
+  case FIN_PENDING: c->fd_state_[i] = FIN_LINGER; shutdown(c->fd_[i], SHUT_WR); break;
+  case FIN_LINGER: log_printf(ERROR, "client %d: socket %d is already in FIN_LINGER state???", c->fd_[0], c->fd_[i]); return 1; // assert() this??
+  case CLOSE_PENDING: log_printf(INFO, "client %d: both connections are finished now - removing it", c->fd_[0]); return 1;
+  }
+
+  log_printf(DEBUG, "client %d state is now        %d: bytes=%d state=%s, %d: bytes=%d state=%s", c->fd_[0],
              c->fd_[0], c->write_buf_offset_[0], client_fd_state_to_string(c->fd_state_[0]),
              c->fd_[1], c->write_buf_offset_[1], client_fd_state_to_string(c->fd_state_[1]));
 
@@ -360,7 +401,7 @@ int clients_read(clients_t* list, fd_set* set)
           break;
         }
         else if(!len) {
-          if(client_handle_close(c, in, out)) {
+          if(client_handle_recv_null(c, in, out)) {
             slist_remove(&(list->list_), c);
             break;
           }
@@ -370,26 +411,6 @@ int clients_read(clients_t* list, fd_set* set)
       }
     }
   }
-
-  return 0;
-}
-
-static int client_handle_pending(client_t* c, int i)
-{
-  log_printf(DEBUG, "client %d: cleared write buffer[%d], %d: bytes=%d state=%s, %d: bytes=%d state=%s", c->fd_[0], c->fd_[i],
-             c->fd_[0], c->write_buf_offset_[0], client_fd_state_to_string(c->fd_state_[0]),
-             c->fd_[1], c->write_buf_offset_[1], client_fd_state_to_string(c->fd_state_[1]));
-
-  if(c->fd_state_[i] == CLOSE_PENDING) {
-    c->fd_state_[i] = CLOSE_LINGER;
-  } else {
-    c->fd_state_[i] = FIN_LINGER;
-  }
-  shutdown(c->fd_[i], SHUT_WR);
-
-  log_printf(DEBUG, "client %d is now          %d: bytes=%d state=%s, %d: bytes=%d state=%s", c->fd_[0], c->fd_[i],
-             c->fd_[0], c->write_buf_offset_[0], client_fd_state_to_string(c->fd_state_[0]),
-             c->fd_[1], c->write_buf_offset_[1], client_fd_state_to_string(c->fd_state_[1]));
 
   return 0;
 }
@@ -423,9 +444,8 @@ int clients_write(clients_t* list, fd_set* set)
             }
             else {
               c->write_buf_offset_[i] = 0;
-              if(c->fd_state_[i] == CLOSE_PENDING || c->fd_state_[i] == FIN_PENDING)
-                if(client_handle_pending(c, i))
-                  slist_remove(&(list->list_), c);
+              if(client_handle_buffer_flushed(c, i))
+                slist_remove(&(list->list_), c);
             }
           }
         }
