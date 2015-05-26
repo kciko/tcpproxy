@@ -185,6 +185,7 @@ int main(int argc, char* argv[])
         break;
       }
     }
+    shutdown(c, SHUT_WR);
     while(recv(c, buf, 1, 0) > 0);
 
     break;

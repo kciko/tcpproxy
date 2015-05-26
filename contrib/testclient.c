@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
       int nbread = recv(c, buf, sizeof(buf), 0);
       if(nbread <= 0) {
         if(!nbread) {
-          fprintf(stderr, "connection closed\n");
+          fprintf(stderr, "connection closed ... finished\n");
           return 0;
         } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
           perror("recv()");
@@ -174,12 +174,7 @@ int main(int argc, char* argv[])
       }
 
       rtot += nbread;
-      printf("%d bytes received, total = %d", nbread, rtot);
-      if(rtot >= 1234567) {
-        printf(" .. finished\n");
-        return 0;
-      }
-      printf("\n");
+      printf("%d bytes received, total = %d\n", nbread, rtot);
     }
     break;
   }
