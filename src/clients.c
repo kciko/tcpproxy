@@ -236,6 +236,7 @@ static char* client_fd_state_to_string(client_fd_state_t s)
   case FIN_LINGER: return "FIN linger";
   case CLOSE_PENDING: return "CLOSE pending";
   }
+  return ""; /* Hey GCC: shut up! */
 }
 
 void clients_read_fds(clients_t* list, fd_set* set, int* max_fd)
