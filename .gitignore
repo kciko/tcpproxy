@@ -1,5 +1,3 @@
-contrib/testserver
-contrib/testclient
 doc/tcpproxy.8.xml
 src/include.mk
 src/tcpproxy
@@ -10,3 +8,5 @@ src/config.h
 src/cfg_parser.c
 src/cfg_parser.dot
 src/cfg_parser.png
+test/testserver
+test/testclient
