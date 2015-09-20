@@ -23,8 +23,8 @@ if you want to rebuild the manpage:
 Installation
 ============
 
-Getting the source via subversion:
-----------------------------------
+Getting the source via GIT:
+---------------------------
 
 git clone git://git.spreadspace.org/tcpproxy.git
 cd tcpproxy
